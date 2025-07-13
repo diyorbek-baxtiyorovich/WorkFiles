@@ -1,0 +1,1179 @@
+<template>
+  <v-card class="edit-form-container">
+    <v-card-title class="pa-6 header-section">
+      <div class="d-flex align-center justify-space-between">
+        <div class="d-flex align-center">
+          <v-icon class="mr-3" size="28" color="primary">mdi-file-document-edit</v-icon>
+          <div>
+            <h2 class="text-h5 mb-1">Ma'lumotlarni tahrirlash</h2>
+            <p class="text-subtitle-1 text-medium-emphasis mb-0">
+              Mavjud ma'lumotlarni o'zgartiring va saqlang
+            </p>
+          </div>
+        </div>
+        <v-btn icon variant="text" size="large" @click="handleClose" :disabled="loading">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+      </div>
+    </v-card-title>
+
+    <v-divider></v-divider>
+
+    <v-card-text class="pa-6">
+      <v-form ref="formRef" v-model="isFormValid" @submit.prevent="handleSubmit">
+        <v-card variant="outlined" class="mb-6 edit-section-card">
+          <v-card-title class="edit-section-title">
+            <v-icon class="mr-2 text-primary">mdi-calendar-edit</v-icon>
+            Asosiy ma'lumotlar
+          </v-card-title>
+          <v-card-text class="pt-4">
+            <v-row>
+              <v-col cols="12" md="4">
+                <v-text-field
+                  v-model="editData.year"
+                  label="Yil"
+                  type="number"
+                  variant="outlined"
+                  density="comfortable"
+                  :rules="[rules.required, rules.year]"
+                  :readonly="loading"
+                  @input="markAsModified"
+                />
+              </v-col>
+
+              <v-col cols="12" md="4">
+                <v-select
+                  v-model="editData.month"
+                  label="Oy"
+                  :items="months"
+                  variant="outlined"
+                  density="comfortable"
+                  :rules="[rules.required]"
+                  :readonly="loading"
+                  @update:model-value="markAsModified"
+                />
+              </v-col>
+
+              <v-col cols="12" md="4">
+                <v-select
+                  v-model="editData.day"
+                  label="Kun"
+                  :items="days"
+                  variant="outlined"
+                  density="comfortable"
+                  :rules="[rules.required]"
+                  :readonly="loading"
+                  @update:model-value="markAsModified"
+                />
+              </v-col>
+            </v-row>
+
+            <!-- Tahrirlash preview -->
+            <v-alert
+              v-if="editData.year && editData.month && editData.day"
+              type="info"
+              variant="tonal"
+              class="mt-4"
+            >
+              <template #title>
+                <strong>Yangi sarlavha:</strong>
+              </template>
+              <div class="mt-2">
+                "Mikrokreditbank" ATB Boshqaruvining {{ editData.year }} yil
+                <span class="text-primary font-weight-bold">{{ editData.day }}</span>
+                -{{ getMonthName(editData.month) }}dagi navbatdagi majlisiga doir materiallar
+                to'plami
+              </div>
+            </v-alert>
+          </v-card-text>
+        </v-card>
+
+        <v-card variant="outlined" class="mb-6 edit-section-card">
+          <v-card-title class="edit-section-title">
+            <v-icon class="mr-2 text-primary">mdi-account-group</v-icon>
+            Kun tartibi va ishtirokchilar
+          </v-card-title>
+          <v-card-text class="pt-4">
+            <v-card class="mb-4 edit-subsection-card">
+              <v-card-title class="edit-subsection-title">
+                <v-icon class="mr-2">mdi-file-document</v-icon>
+                Kun tartibi
+                <v-chip v-if="editData.agenda?.file" class="ml-2" size="small" color="success">
+                  Fayl mavjud
+                </v-chip>
+              </v-card-title>
+
+              <v-card-text class="mt-4">
+                <div v-if="!hesDeleteInfo" class="d-flex align-center justify-space-between">
+                  <div class="d-flex align-center">
+                    <span class="mr-4 text-truncate" style="max-width: 300px">
+                      {{ getFileName(editData.agenda.url) }}
+                    </span>
+                  </div>
+                  <v-btn variant="text" @click="removeAgendaFile" :disabled="loading">
+                    <v-icon color="error">mdi-delete</v-icon>
+                  </v-btn>
+                </div>
+                <v-file-input
+                  v-else
+                  v-model="editData.agenda.file"
+                  label="Kun tartibi faylini almashtirish"
+                  accept=".pdf"
+                  prepend-icon="mdi-file-pdf-box"
+                  show-size
+                  variant="outlined"
+                  density="comfortable"
+                  :rules="[rules.pdfFile]"
+                  :readonly="loading"
+                  @update:model-value="markAsModified"
+                />
+                <p class="text-caption text-medium-emphasis mt-2">
+                  Eski fayl o'chirsangi , yangi fayl almashtiriladi
+                </p>
+              </v-card-text>
+            </v-card>
+
+            <v-card class="edit-subsection-card">
+              <v-card-title class="edit-subsection-title">
+                <v-icon class="mr-2">mdi-account-multiple</v-icon>
+                Ishtirokchilar ro'yxati
+              </v-card-title>
+              <v-card-text class="mt-4">
+                <v-row>
+                  <v-col cols="12" md="6">
+                    <div class="d-flex align-center mb-2">
+                      <span class="text-subtitle-2">Tarkibiy bo'linmalar</span>
+                      <v-chip
+                        v-if="editData.participants.tarkibiy"
+                        class="ml-2"
+                        size="small"
+                        color="success"
+                      >
+                        Fayl mavjud
+                      </v-chip>
+                    </div>
+                    <div v-if="!hesDeleteInfoTar" class="d-flex align-center justify-space-between">
+                      <div class="d-flex align-center">
+                        <span class="mr-4 text-truncate" style="max-width: 300px">
+                          {{ getFileName(editData.participants.tarkibiy.url) }}
+                        </span>
+                      </div>
+                      <v-btn variant="text" @click="removeTarFile" :disabled="loading">
+                        <v-icon color="error">mdi-delete</v-icon>
+                      </v-btn>
+                    </div>
+                    <v-file-input
+                      v-else
+                      v-model="editData.participants.tarkibiy.file"
+                      label="Tarkibiy bo'linmalar rahbarlar"
+                      accept=".pdf"
+                      prepend-icon="mdi-file-pdf-box"
+                      show-size
+                      variant="outlined"
+                      density="comfortable"
+                      :rules="[rules.pdfFile]"
+                      :readonly="loading"
+                      @update:model-value="markAsModified"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <div class="d-flex align-center mb-2">
+                      <span class="text-subtitle-2">Xududiy bo'linmalar</span>
+                      <v-chip
+                        v-if="editData.participants.xududiy"
+                        class="ml-2"
+                        size="small"
+                        color="success"
+                      >
+                        Fayl mavjud
+                      </v-chip>
+                    </div>
+                    <div v-if="!hesDeleteInfoXud" class="d-flex align-center justify-space-between">
+                      <div class="d-flex align-center">
+                        <span class="mr-4 text-truncate" style="max-width: 300px">
+                          {{ getFileName(editData.participants.xududiy.url) }}
+                        </span>
+                      </div>
+                      <v-btn variant="text" @click="removeXudFile" :disabled="loading">
+                        <v-icon color="error">mdi-delete</v-icon>
+                      </v-btn>
+                    </div>
+                    <v-file-input
+                      v-else
+                      v-model="editData.participants.xududiy.file"
+                      label="Xududiy bo'linmalar rahbarlar"
+                      accept=".pdf"
+                      prepend-icon="mdi-file-pdf-box"
+                      show-size
+                      variant="outlined"
+                      density="comfortable"
+                      :rules="[rules.pdfFile]"
+                      :readonly="loading"
+                      @update:model-value="markAsModified"
+                    />
+                  </v-col>
+                </v-row>
+              </v-card-text>
+            </v-card>
+          </v-card-text>
+        </v-card>
+
+        <v-card variant="outlined" class="mb-6 edit-section-card">
+          <v-card-title class="edit-section-title">
+            <v-icon class="mr-2 text-primary">mdi-attachment</v-icon>
+            Qo'shimcha hujjatlar
+            <v-chip class="ml-2" size="small" color="info"> {{ documentsCount }} ta blok </v-chip>
+          </v-card-title>
+          <v-card-text class="pt-4">
+            <v-alert v-if="!isDocumentsValid" type="warning" variant="tonal" class="mb-4">
+              <template #title>
+                <strong>Ma'lumot yuklash xatoligi!</strong>
+              </template>
+              <p class="mb-0">
+                Hujjatlar ma'lumotlarini yuklashda xatolik yuz berdi. Sahifani yangilang yoki qayta
+                urinib ko'ring.
+              </p>
+            </v-alert>
+
+            <template v-if="isDocumentsValid">
+              <v-row>
+                <v-col
+                  cols="12"
+                  v-for="(doc, index) in editData.documentsList"
+                  :key="`doc-${index}`"
+                >
+                  <v-card class="mb-4 edit-document-card">
+                    <v-card-title class="edit-document-header">
+                      <div class="d-flex justify-space-between align-center w-100">
+                        <div class="d-flex align-center">
+                          <v-icon class="mr-2" color="primary">mdi-file-document-multiple</v-icon>
+                          <span class="edit-document-title">{{
+                            getDocumentTitle(doc, index)
+                          }}</span>
+                          <v-chip
+                            v-if="isDocumentComplete(doc)"
+                            class="ml-2"
+                            size="small"
+                            color="success"
+                          >
+                            To'liq
+                          </v-chip>
+                        </div>
+                        <div class="d-flex align-center gap-2">
+                          <v-btn
+                            icon
+                            color="primary"
+                            size="small"
+                            variant="text"
+                            @click="duplicateDocumentBlock(index)"
+                            :disabled="loading"
+                          >
+                            <v-icon size="18">mdi-content-copy</v-icon>
+                          </v-btn>
+                          <v-btn
+                            v-if="editData.documentsList.length > 1"
+                            icon
+                            color="error"
+                            size="small"
+                            variant="text"
+                            @click="removeDocumentBlock(index)"
+                            :disabled="loading"
+                          >
+                            <v-icon size="18">mdi-delete</v-icon>
+                          </v-btn>
+                        </div>
+                      </div>
+                    </v-card-title>
+
+                    <v-card-text class="mt-3">
+                      <v-row>
+                        <v-col cols="12">
+                          <v-text-field
+                            v-model="doc.sarlavhasi"
+                            label="Sarlavha"
+                            variant="outlined"
+                            density="comfortable"
+                            :rules="[rules.required]"
+                            :readonly="loading"
+                            @input="markAsModified"
+                          />
+                        </v-col>
+
+                        <v-col cols="12" md="6">
+                          <div class="d-flex align-center mb-2">
+                            <span class="text-subtitle-2">Ma'lumotnoma</span>
+                            <v-chip
+                              v-if="!!doc.malumotnoma"
+                              class="ml-2"
+                              size="small"
+                              color="success"
+                            >
+                              Mavjud
+                            </v-chip>
+                          </div>
+                          <div
+                            v-if="doc.malumotnoma?.url?.url"
+                            class="d-flex align-center justify-space-between pa-2 rounded mb-2"
+                            style="border: 1px solid #ccc"
+                          >
+                            <div class="text-truncate" style="max-width: 300px">
+                              <v-icon small class="mr-2" color="primary">mdi-file-pdf-box</v-icon>
+                              <a
+                                :href="doc.malumotnoma?.url?.url"
+                                target="_blank"
+                                class="text-decoration-none"
+                                style="color: inherit"
+                              >
+                                {{ getShortFileName(doc.malumotnoma?.url?.url) }}
+                              </a>
+                            </div>
+
+                            <v-btn
+                              icon
+                              size="small"
+                              variant="text"
+                              color="error"
+                              @click="removeRefrenseFile(index, doc.malumotnoma?.url?.url)"
+                              :disabled="loading"
+                            >
+                              <v-icon small>mdi-delete</v-icon>
+                            </v-btn>
+                          </div>
+                          <v-file-input
+                            v-else
+                            v-model="doc.malumotnoma.file"
+                            label="Ma'lumotnoma faylini almashtirish"
+                            accept=".pdf"
+                            prepend-icon="mdi-file-pdf-box"
+                            show-size
+                            variant="outlined"
+                            density="comfortable"
+                            :rules="[rules.pdfFile]"
+                            :readonly="loading"
+                            @update:model-value="markAsModified"
+                          />
+                        </v-col>
+
+                        <v-col cols="12" md="6">
+                          <div class="d-flex align-center mb-2">
+                            <span class="text-subtitle-2">Qaror loyihasi</span>
+                            <v-chip v-if="doc.qaror" class="ml-2" size="small" color="success">
+                              Mavjud
+                            </v-chip>
+                          </div>
+                          <div
+                            v-if="doc.qaror?.url?.url"
+                            class="d-flex align-center justify-space-between pa-2 rounded mb-2"
+                            style="border: 1px solid #ccc"
+                          >
+                            <div class="text-truncate" style="max-width: 300px">
+                              <v-icon small class="mr-2" color="primary">mdi-file-pdf-box</v-icon>
+                              <a
+                                :href="doc.qaror?.url?.url"
+                                target="_blank"
+                                class="text-decoration-none"
+                                style="color: inherit"
+                              >
+                                {{ getShortFileName(doc.qaror?.url?.url) }}
+                              </a>
+                            </div>
+
+                            <v-btn
+                              icon
+                              size="small"
+                              variant="text"
+                              color="error"
+                              @click="removeQarortFile(index, doc.qaror?.url?.url)"
+                              :disabled="loading"
+                            >
+                              <v-icon small>mdi-delete</v-icon>
+                            </v-btn>
+                          </div>
+                          <v-file-input
+                            v-else
+                            v-model="doc.qaror.file"
+                            label="Qaror loyihasi faylini almashtirish"
+                            accept=".pdf"
+                            prepend-icon="mdi-file-pdf-box"
+                            show-size
+                            variant="outlined"
+                            density="comfortable"
+                            :rules="[rules.pdfFile]"
+                            :readonly="loading"
+                            @update:model-value="markAsModified"
+                          />
+                        </v-col>
+
+                        <v-col cols="12" md="6">
+                          <div class="d-flex align-center mb-2">
+                            <span class="text-subtitle-2">Taqdimot</span>
+                            <v-chip v-if="doc.taqdimot" class="ml-2" size="small" color="success">
+                              Mavjud
+                            </v-chip>
+                          </div>
+
+                          <div
+                            v-if="doc.taqdimot?.url?.url"
+                            class="d-flex align-center justify-space-between pa-2 rounded mb-2"
+                            style="border: 1px solid #ccc"
+                          >
+                            <div class="text-truncate" style="max-width: 300px">
+                              <v-icon small class="mr-2" color="primary">mdi-file-pdf-box</v-icon>
+                              <a
+                                :href="doc.taqdimot?.url?.url"
+                                target="_blank"
+                                class="text-decoration-none"
+                                style="color: inherit"
+                              >
+                                {{ getShortFileName(doc.taqdimot?.url?.url) }}
+                              </a>
+                            </div>
+
+                            <v-btn
+                              icon
+                              size="small"
+                              variant="text"
+                              color="error"
+                              @click="removeTaqdimotFile(index, doc.taqdimot?.url?.url)"
+                              :disabled="loading"
+                            >
+                              <v-icon small>mdi-delete</v-icon>
+                            </v-btn>
+                          </div>
+                          <v-file-input
+                            v-else
+                            v-model="doc.taqdimot.file"
+                            label="Taqdimot faylini almashtirish"
+                            accept=".pdf"
+                            prepend-icon="mdi-file-pdf-box"
+                            show-size
+                            variant="outlined"
+                            density="comfortable"
+                            :rules="[rules.pdfFile]"
+                            :readonly="loading"
+                            @update:model-value="markAsModified"
+                          />
+                        </v-col>
+
+                        <v-col cols="12" md="6">
+                          <div class="d-flex align-center mb-2">
+                            <span class="text-subtitle-2">Ilovalar</span>
+                            <v-chip
+                              v-if="doc.ilovalar && doc.ilovalar.length > 0"
+                              class="ml-2"
+                              size="small"
+                              color="success"
+                            >
+                              {{ doc.ilovalar.length }} ta fayl
+                            </v-chip>
+                          </div>
+
+                          <v-file-input
+                            v-model="doc.newIlovalar"
+                            label="Ilovalar fayllarini almashtirish"
+                            accept=".pdf"
+                            prepend-icon="mdi-file-pdf-box"
+                            show-size
+                            multiple
+                            variant="outlined"
+                            density="comfortable"
+                            :rules="[rules.pdfFileMultiple]"
+                            :readonly="loading"
+                            @update:model-value="markAsModified"
+                          />
+
+                          <div v-if="doc.ilovalar.length">
+                            <div
+                              v-for="(file, ilovaIndex) in doc.ilovalar"
+                              :key="`ilova-${ilovaIndex}`"
+                              class="d-flex align-center justify-space-between pa-2 rounded mb-2"
+                              style="border: 1px solid #ccc"
+                            >
+                              <div class="text-truncate" style="max-width: 300px">
+                                <v-icon small class="mr-2" color="primary">mdi-file-pdf-box</v-icon>
+                                <a
+                                  :href="file.path"
+                                  target="_blank"
+                                  class="text-decoration-none"
+                                  style="color: inherit"
+                                >
+                                  {{ getShortFileName(file.path) }}
+                                </a>
+                              </div>
+
+                              <v-btn
+                                icon
+                                size="small"
+                                variant="text"
+                                color="error"
+                                @click="removeIlovaFile(index, ilovaIndex, file.path)"
+                                :disabled="loading"
+                              >
+                                <v-icon small>mdi-delete</v-icon>
+                              </v-btn>
+                            </div>
+                          </div>
+                        </v-col>
+                      </v-row>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+              </v-row>
+
+              <v-btn
+                color="primary"
+                class="mt-2"
+                @click="addDocumentBlock"
+                prepend-icon="mdi-plus"
+                variant="outlined"
+                size="large"
+                :disabled="loading"
+              >
+                Yangi hujjat bloki qo'shish
+              </v-btn>
+            </template>
+
+            <template v-else>
+              <v-empty-state
+                icon="mdi-file-document-alert"
+                title="Hujjatlar yuklashda xatolik"
+                text="Hujjatlar ma'lumotlarini yuklashda xatolik yuz berdi. Sahifani yangilang."
+              >
+                <template #actions>
+                  <v-btn
+                    color="primary"
+                    @click="initializeDocuments"
+                    prepend-icon="mdi-plus"
+                    variant="outlined"
+                  >
+                    Yangi hujjat qo'shish
+                  </v-btn>
+                </template>
+              </v-empty-state>
+            </template>
+          </v-card-text>
+        </v-card>
+
+        <v-alert v-if="hasModifications" type="warning" variant="tonal" class="mb-4">
+          <template #title>
+            <strong>Saqlanmagan o'zgarishlar!</strong>
+          </template>
+          <p class="mb-0">
+            Formada o'zgarishlar mavjud. Ularni saqlash uchun "Yangilash" tugmasini bosing.
+          </p>
+        </v-alert>
+      </v-form>
+    </v-card-text>
+
+    <v-divider></v-divider>
+    <v-snackbar v-model="showSuccessSnackbar" color="success" :timeout="3000" top>
+      {{ successMessage }}
+      <template v-slot:actions>
+        <v-btn @click="showSuccessSnackbar = false" variant="text"> Yopish </v-btn>
+      </template>
+    </v-snackbar>
+
+    <v-dialog v-model="modelInfo" max-width="500">
+      <v-card>
+        <v-card-title class="text-h6">
+          <v-icon color="warning" class="mr-2">mdi-alert</v-icon>
+          E'tibor bering!
+        </v-card-title>
+
+        <v-card-text> Saqlanmagan o'zgarishlar yo'qoladi. Davom etasizmi? </v-card-text>
+
+        <v-card-actions class="justify-end">
+          <v-btn color="grey" variant="text" @click="handleModalCancel"> Bekor qilish </v-btn>
+          <v-btn color="red" variant="flat" @click="handleModalConfirm"> Davom etish </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-card-actions class="pa-6">
+      <v-spacer></v-spacer>
+      <v-btn
+        @click="handleCancel"
+        variant="outlined"
+        color="error"
+        size="large"
+        prepend-icon="mdi-cancel"
+        :disabled="loading"
+      >
+        Bekor qilish
+      </v-btn>
+      <v-btn
+        @click="handleSubmit"
+        color="success"
+        size="large"
+        prepend-icon="mdi-content-save"
+        :disabled="!isFormValid || loading || !hasModifications"
+        :loading="loading"
+        class="ml-4"
+      >
+        Yangilash
+      </v-btn>
+    </v-card-actions>
+  </v-card>
+</template>
+
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue'
+import DirectorisActivity from '@/servise/board.directors.activitie.js'
+
+const props = defineProps({
+  data: {
+    type: Object,
+    required: true,
+    validator: (value) => {
+      return value && typeof value === 'object' && value.year && value.month && value.day
+    },
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  visible: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+const emit = defineEmits(['update', 'cancel', 'close'])
+
+const formRef = ref(null)
+const isFormValid = ref(false)
+const hasModifications = ref(false)
+const hesDeleteInfo = ref(false)
+const hesDeleteInfoTar = ref(false)
+const successMessage = ref('')
+const hesDeleteInfoXud = ref(false)
+const showSuccessSnackbar = ref(false)
+const modelInfo = ref(false)
+const pendingAction = ref(null)
+
+const editData = ref({
+  year: null,
+  month: null,
+  day: null,
+  agenda: {
+    file: null,
+    url: null,
+  },
+  participants: {
+    tarkibiy: { file: null, url: null },
+    xududiy: { file: null, url: null },
+  },
+  documentsList: [],
+})
+
+const months = [
+  { title: 'Yanvar', value: 1 },
+  { title: 'Fevral', value: 2 },
+  { title: 'Mart', value: 3 },
+  { title: 'Aprel', value: 4 },
+  { title: 'May', value: 5 },
+  { title: 'Iyun', value: 6 },
+  { title: 'Iyul', value: 7 },
+  { title: 'Avgust', value: 8 },
+  { title: 'Sentabr', value: 9 },
+  { title: 'Oktabr', value: 10 },
+  { title: 'Noyabr', value: 11 },
+  { title: 'Dekabr', value: 12 },
+]
+
+const days = computed(() => {
+  if (!editData.value.month || !editData.value.year) return []
+
+  const daysInMonth = new Date(editData.value.year, editData.value.month, 0).getDate()
+  return Array.from({ length: daysInMonth }, (_, i) => ({
+    title: i + 1,
+    value: i + 1,
+  }))
+})
+
+const getFileName = (url) => {
+  if (!url) return ''
+  return decodeURIComponent(url.split('/').pop())
+}
+const getShortFileName = (path) => {
+  if (!path) return 'Nomaʼlum fayl'
+  return decodeURIComponent(path.split('/').pop())
+}
+
+const removeIlovaFile = async (docIndex, ilovaIndex, url) => {
+  const ilovalar = editData.value.documentsList[docIndex].ilovalar
+  if (Array.isArray(ilovalar)) {
+    ilovalar.splice(ilovaIndex, 1)
+    markAsModified()
+  }
+  const param = {
+    path: url,
+    type_: 'app_file',
+  }
+  try {
+    const result = await DirectorisActivity.deleteEventDocsById(param)
+    successMessage.value = "Ma'lumot muvaffaqiyatli o'chirildi"
+    showSuccessSnackbar.value = true
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+const removeTaqdimotFile = async (docIndex, url) => {
+  const doc = editData.value.documentsList[docIndex]
+  if (doc && doc.taqdimot) {
+    doc.taqdimot = { file: null, url: null }
+    markAsModified()
+  }
+  const param = {
+    path: url,
+    type_: 'presentation',
+  }
+  try {
+    const result = await DirectorisActivity.deleteEventDocsById(param)
+    successMessage.value = "Ma'lumot muvaffaqiyatli o'chirildi"
+    showSuccessSnackbar.value = true
+  } catch (error) {
+    console.log(error)
+  }
+}
+const removeQarortFile = async (docIndex, url) => {
+  const doc = editData.value.documentsList[docIndex]
+  if (doc && doc.qaror) {
+    doc.qaror = { file: null, url: null }
+    markAsModified()
+  }
+  const param = {
+    path: url,
+    type_: 'resolution',
+  }
+  try {
+    const result = await DirectorisActivity.deleteEventDocsById(param)
+    successMessage.value = "Ma'lumot muvaffaqiyatli o'chirildi"
+    showSuccessSnackbar.value = true
+  } catch (error) {
+    console.log(error)
+  }
+}
+const removeRefrenseFile = async (docIndex, url) => {
+  const doc = editData.value.documentsList[docIndex]
+  if (doc && doc.malumotnoma) {
+    doc.malumotnoma = { file: null, url: null }
+    markAsModified()
+  }
+  const param = {
+    path: url,
+    type_: 'reference',
+  }
+  try {
+    const result = await DirectorisActivity.deleteEventDocsById(param)
+    successMessage.value = "Ma'lumot muvaffaqiyatli o'chirildi"
+    showSuccessSnackbar.value = true
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+const removeAgendaFile = () => {
+  hesDeleteInfo.value = true
+}
+const removeXudFile = () => {
+  hesDeleteInfoXud.value = true
+}
+const removeTarFile = () => {
+  hesDeleteInfoTar.value = true
+}
+
+const documentsCount = computed(() => {
+  return Array.isArray(editData.value.documentsList) ? editData.value.documentsList.length : 0
+})
+
+const isDocumentsValid = computed(() => {
+  return Array.isArray(editData.value.documentsList)
+})
+
+const rules = {
+  required: (value) => !!value || 'Bu maydon majburiy',
+  year: (value) => {
+    const year = parseInt(value)
+    return (year >= 2000 && year <= 2100) || "Yil 2000-2100 oralig'ida bo'lishi kerak"
+  },
+  pdfFile: (value) => {
+    if (!value) return true
+    const file = Array.isArray(value) ? value[0] : value
+    return file.type === 'application/pdf' || 'Faqat PDF fayllar ruxsat etilgan'
+  },
+  pdfFileMultiple: (value) => {
+    if (!value || value.length === 0) return true
+    return (
+      value.every((file) => file.type === 'application/pdf') || 'Faqat PDF fayllar ruxsat etilgan'
+    )
+  },
+}
+
+const getMonthName = (monthNumber) => {
+  const month = months.find((m) => m.value === monthNumber)
+  return month ? month.title : ''
+}
+
+const getDocumentTitle = (doc, index) => {
+  if (!doc) return `Hujjat ${index + 1}`
+  return doc.sarlavhasi || `Hujjat ${index + 1}`
+}
+
+const isDocumentComplete = (doc) => {
+  if (!doc) return false
+  return !!(doc.sarlavhasi && doc.malumotnoma && doc.qaror && doc.taqdimot)
+}
+
+const markAsModified = () => {
+  hasModifications.value = true
+}
+
+const addDocumentBlock = () => {
+  editData.value.documentsList.push({
+    id: null,
+    sarlavhasi: '',
+    malumotnoma: { file: null, url: null },
+    qaror: { file: null, url: null },
+    taqdimot: { file: null, url: null },
+    ilovalar: [],
+    newIlovalar: [],
+  })
+  markAsModified()
+}
+
+const removeDocumentBlock = (index) => {
+  if (editData.value.documentsList.length > 1) {
+    editData.value.documentsList.splice(index, 1)
+    markAsModified()
+  }
+}
+
+const duplicateDocumentBlock = (index) => {
+  const originalDoc = editData.value.documentsList[index]
+  if (!originalDoc) return
+
+  const duplicatedDoc = {
+    id: null,
+    sarlavhasi: (originalDoc.sarlavhasi || '') + ' (nusxa)',
+    malumotnoma: {
+      file: null,
+      url: originalDoc.malumotnoma?.url || null,
+    },
+    qaror: {
+      file: null,
+      url: originalDoc.qaror?.url || null,
+    },
+    taqdimot: {
+      file: null,
+      url: originalDoc.taqdimot?.url || null,
+    },
+    ilovalar: Array.isArray(originalDoc.ilovalar)
+      ? originalDoc.ilovalar.map((ilova) => ({
+          file: null,
+          url: ilova?.url || ilova?.path || null,
+        }))
+      : [],
+  }
+
+  editData.value.documentsList.splice(index + 1, 0, duplicatedDoc)
+  markAsModified()
+}
+
+const initializeDocuments = () => {
+  editData.value.documentsList = [
+    {
+      sarlavhasi: '',
+      malumotnoma: null,
+      qaror: null,
+      taqdimot: null,
+      ilovalar: [],
+    },
+  ]
+  markAsModified()
+}
+const handleSubmit = async () => {
+  hesDeleteInfo.value = false
+  hesDeleteInfoXud.value = false
+  hesDeleteInfoTar.value = false
+
+  if (!isFormValid.value) return
+
+  const { valid } = await formRef.value.validate()
+  if (!valid) return
+
+  const updatedData = {}
+
+  // Sana o'zgarishi
+  if (editData.value.year !== props.data.year) updatedData.year = editData.value.year
+  if (editData.value.month !== props.data.month) updatedData.month = editData.value.month
+  if (editData.value.day !== props.data.day) updatedData.day = editData.value.day
+
+  // Agenda
+  if (editData.value.agenda?.file instanceof File) {
+    updatedData.agenda = editData.value.agenda.file
+  }
+
+  // Participants
+  const participantUpdates = {}
+  if (editData.value.participants.tarkibiy?.file instanceof File) {
+    participantUpdates.tarkibiy = editData.value.participants.tarkibiy.file
+  }
+  if (editData.value.participants.xududiy?.file instanceof File) {
+    participantUpdates.xududiy = editData.value.participants.xududiy.file
+  }
+  if (Object.keys(participantUpdates).length > 0) {
+    updatedData.participants = participantUpdates
+  }
+
+  // Documents
+  const documentsChanged = editData.value.documentsList.some((doc, i) => {
+    const originalDoc = props.data.documentsList?.[i]
+
+    return (
+      doc.sarlavhasi !== originalDoc?.sarlavhasi ||
+      doc.malumotnoma?.file instanceof File ||
+      doc.qaror?.file instanceof File ||
+      doc.taqdimot?.file instanceof File ||
+      (doc.newIlovalar && doc.newIlovalar.some((f) => f instanceof File))
+    )
+  })
+
+  if (documentsChanged) {
+    updatedData.documentsList = editData.value.documentsList.map((doc) => {
+      const ilovalarFiles = Array.isArray(doc.newIlovalar)
+        ? doc.newIlovalar.filter((f) => f instanceof File)
+        : []
+
+      return {
+        id: doc.id || null,
+        sarlavhasi: doc.sarlavhasi || '',
+        malumotnoma: doc.malumotnoma?.file instanceof File ? doc.malumotnoma.file : null,
+        qaror: doc.qaror?.file instanceof File ? doc.qaror.file : null,
+        taqdimot: doc.taqdimot?.file instanceof File ? doc.taqdimot.file : null,
+        ilovalar: ilovalarFiles,
+      }
+    })
+  }
+
+  if (Object.keys(updatedData).length === 0) {
+    console.log("Hech qanday o'zgarish yo'q.")
+    return
+  }
+
+  console.log("Yuborilayotgan yangilangan ma'lumot:", updatedData)
+  emit('update', updatedData)
+  hasModifications.value = false
+}
+
+const handleCancel = () => {
+  hesDeleteInfo.value = false
+  hesDeleteInfoXud.value = false
+  hesDeleteInfoTar.value = false
+
+  if (hasModifications.value) {
+    pendingAction.value = 'cancel'
+    modelInfo.value = true
+  } else {
+    emit('cancel')
+  }
+}
+
+const handleClose = () => {
+  hesDeleteInfo.value = false
+  hesDeleteInfoXud.value = false
+  hesDeleteInfoTar.value = false
+
+  if (hasModifications.value) {
+    pendingAction.value = 'close'
+    modelInfo.value = true
+  } else {
+    emit('close')
+  }
+}
+
+const handleModalCancel = () => {
+  modelInfo.value = false
+  pendingAction.value = null
+}
+
+const handleModalConfirm = () => {
+  modelInfo.value = false
+
+  if (pendingAction.value === 'cancel') {
+    emit('cancel')
+  } else if (pendingAction.value === 'close') {
+    emit('close')
+  }
+
+  pendingAction.value = null
+}
+const loadData = () => {
+  try {
+    if (!props.data) return
+
+    const { year, month, day, agenda, participants, documentsList, documents } = props.data
+
+    // Sana
+    editData.value.year = year || null
+    editData.value.month = month || null
+    editData.value.day = day || null
+
+    // Agenda
+    editData.value.agenda = {
+      file: null,
+      url: agenda || null,
+    }
+
+    // Participants
+    editData.value.participants = {
+      tarkibiy: {
+        file: null,
+        url: participants?.tarkibiy || null,
+      },
+      xududiy: {
+        file: null,
+        url: participants?.xududiy || null,
+      },
+    }
+
+    // Documents - BU YERDA HAM O'ZGARISH
+    const sourceDocs =
+      Array.isArray(documentsList) && documentsList.length ? documentsList : documents || []
+
+    editData.value.documentsList = sourceDocs.map((doc) => ({
+      id: doc.id || null,
+      sarlavhasi: doc.sarlavhasi || '',
+      malumotnoma: {
+        file: null,
+        url: doc.malumotnoma || null,
+      },
+      qaror: {
+        file: null,
+        url: doc.qaror || null,
+      },
+      taqdimot: {
+        file: null,
+        url: doc.taqdimot || null,
+      },
+      ilovalar: Array.isArray(doc.ilovalar)
+        ? doc.ilovalar.map((ilova) => ({
+            id: ilova.id || null,
+            path: ilova.path || ilova.url || null,
+          }))
+        : [],
+    }))
+
+    hasModifications.value = false
+  } catch (error) {
+    console.error("Ma'lumotlarni yuklashda xatolik:", error)
+  }
+}
+
+watch(() => props.data, loadData, { immediate: true })
+
+onMounted(() => {
+  loadData()
+})
+
+defineExpose({
+  resetModifications: () => {
+    hasModifications.value = false
+  },
+  hasUnsavedChanges: () => hasModifications.value,
+  validateForm: () => formRef.value?.validate(),
+})
+</script>
+<style scoped>
+.edit-form-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.header-section {
+  background: linear-gradient(
+    135deg,
+    rgba(var(--v-theme-primary), 0.1) 0%,
+    rgba(var(--v-theme-primary), 0.05) 100%
+  );
+  border-bottom: 1px solid rgba(var(--v-theme-primary), 0.1);
+}
+
+.edit-section-card {
+  border-radius: 12px;
+  border: 2px solid rgba(var(--v-theme-primary), 0.15);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.edit-section-card:hover {
+  border-color: rgba(var(--v-theme-primary), 0.3);
+  box-shadow: 0 4px 20px rgba(var(--v-theme-primary), 0.1);
+}
+
+.edit-section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: rgb(var(--v-theme-primary));
+  padding: 16px 20px;
+  background: rgba(var(--v-theme-primary), 0.08);
+  border-bottom: 1px solid rgba(var(--v-theme-primary), 0.1);
+}
+
+.edit-subsection-title {
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 12px 16px;
+  background: rgba(var(--v-theme-surface), 0.8);
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+
+.edit-document-card {
+  border-radius: 8px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.2);
+  transition: all 0.3s ease;
+}
+
+.edit-document-card:hover {
+  border-color: rgba(var(--v-theme-primary), 0.4);
+  box-shadow: 0 2px 12px rgba(var(--v-theme-primary), 0.1);
+}
+
+.edit-document-header {
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 12px 16px;
+  background: rgba(var(--v-theme-primary), 0.06);
+  border-bottom: 1px solid rgba(var(--v-theme-primary), 0.1);
+}
+
+.edit-document-title {
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.v-btn {
+  border-radius: 8px;
+  text-transform: none;
+  font-weight: 500;
+}
+
+.v-text-field,
+.v-select,
+.v-file-input {
+  border-radius: 8px;
+}
+
+.v-card-actions {
+  background: rgba(var(--v-theme-surface), 0.95);
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+</style>
