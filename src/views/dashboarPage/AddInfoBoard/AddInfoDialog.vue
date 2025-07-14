@@ -143,7 +143,6 @@
                       v-model="doc.sarlavhasi"
                       label="Sarlavha"
                       required
-                      :rules="[rules.required]"
                       @input="updateFormData"
                     />
                   </v-col>
@@ -420,7 +419,7 @@ const isCurrentStepValid = computed(() => {
 })
 
 const isFormValid = computed(() => {
-  return isStep1Valid.value && isStep2Valid.value && isStep3Valid.value
+  return isStep1Valid.value && isStep2Valid.value
 })
 
 const updateFormData = () => {

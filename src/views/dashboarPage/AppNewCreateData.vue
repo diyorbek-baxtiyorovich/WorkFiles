@@ -1,14 +1,5 @@
 <template>
   <v-container fluid>
-    <v-card class="action-bar mb-4" elevation="2">
-      <v-card-text class="d-flex justify-space-between align-center py-3">
-        <div class="d-flex align-center">
-          <v-icon color="info" class="mr-2">mdi-information</v-icon>
-          <span class="text-h5 font-weight-bold">Boshqaruv</span>
-        </div>
-      </v-card-text>
-    </v-card>
-
     <v-card class="mb-2 px-4">
       <v-row align="center" dense>
         <!-- Qidiruv maydoni -->
@@ -32,7 +23,7 @@
               <v-text-field
                 v-model="formattedDate"
                 v-bind="props"
-                label="Sana"
+                label="Sana bo'yicha qidiruv"
                 prepend-inner-icon="mdi-calendar"
                 variant="outlined"
                 density="comfortable"
@@ -77,44 +68,59 @@
     </v-card>
 
     <v-card class="data-table-card" elevation="2">
-      <v-data-table
-        :headers="headers"
-        :items="items"
-        :loading="loading"
-        :server-items-length="totalItems"
-        v-model:options="options"
-        class="elevation-0 modern-table"
-        item-value="id"
-        height="450"
-        :items-per-page-options="[
-          { value: 25, title: '25' },
-          { value: 50, title: '50' },
-          { value: 100, title: '100' },
-          { value: 150, title: '150' },
-        ]"
-        no-data-text="Ma'lumot topilmadi"
-        loading-text="Ma'lumotlar yuklanmoqda..."
-      >
-        <template v-slot:item.date="{ item }">
-          {{ formatDateType(item) }}
-        </template>
+      <v-table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Sarlavha</th>
+            <th>Sana</th>
+            <th>Yaratilgan sana</th>
+            <th>Amallar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(item, index) in items"
+            :key="item.id"
+            style="cursor: pointer"
+            @click.stop="viewItem(item)"
+          >
+            <td>{{ (options.page - 1) * options.itemsPerPage + index + 1 }}</td>
+            <td>{{ item.title }}</td>
+            <td>{{ formatDateType(item) }}</td>
+            <td>{{ formatDate(item.recorded_date) }}</td>
+            <td>
+              <v-btn icon size="small" variant="plain" @click.stop="editItem(item)">
+                <v-icon size="20" color="blue">mdi-pencil</v-icon>
+              </v-btn>
+              <v-btn icon size="small" variant="plain" @click.stop="deleteItem(item)">
+                <v-icon size="20" color="error">mdi-delete</v-icon>
+              </v-btn>
+            </td>
+          </tr>
+        </tbody>
+      </v-table>
+      <v-row class="mt-4" align="center" justify="end">
+        <v-col cols="auto">
+          <v-select
+            v-model="options.itemsPerPage"
+            :items="[5, 10, 25, 50]"
+            label="Har sahifada nechta"
+            class="ma-0"
+            density="comfortable"
+            hide-details
+            style="width: 150px"
+          />
+        </v-col>
 
-        <template v-slot:item.recorded_date="{ item }">
-          {{ formatDate(item.recorded_date) }}
-        </template>
-
-        <template v-slot:item.actions="{ item }">
-          <v-btn icon size="small" variant="plain" @click="viewItem(item)">
-            <v-icon size="20" color="green">mdi-eye</v-icon>
-          </v-btn>
-          <v-btn icon size="small" variant="plain" @click="editItem(item)">
-            <v-icon size="20" color="blue">mdi-pencil</v-icon>
-          </v-btn>
-          <v-btn icon size="small" variant="plain" @click="deleteItem(item)">
-            <v-icon size="20" color="error">mdi-delete</v-icon>
-          </v-btn>
-        </template>
-      </v-data-table>
+        <v-col cols="auto">
+          <v-pagination
+            v-model="options.page"
+            :length="Math.ceil(totalItems / options.itemsPerPage)"
+            :total-visible="7"
+          />
+        </v-col>
+      </v-row>
     </v-card>
 
     <!-- Add Dialog -->
@@ -222,7 +228,7 @@ const startMenu = ref(false)
 const selectedDate = ref(null)
 const options = reactive({
   page: 1,
-  itemsPerPage: 25,
+  itemsPerPage: 8,
 })
 const totalItems = ref(0)
 const showSuccessSnackbar = ref(false)
@@ -237,13 +243,17 @@ const editingItem = ref(null)
 const viewingItem = ref(null)
 
 const headers = ref([
-  { title: '#', key: 'id', sortable: true },
+  { title: '#', key: 'index', sortable: true },
   { title: 'Sarlavha', key: 'title', sortable: true },
   { title: 'Sana', key: 'date', sortable: false },
   { title: 'Yaratilgan sana', key: 'recorded_date', sortable: true },
   { title: 'Amallar', key: 'actions', sortable: false, align: 'center' },
 ])
 const items = ref([])
+
+const rowClicked = (item) => {
+  console.log('✅ Clicked item:', item)
+}
 
 const formData = ref({
   year: new Date().getFullYear(),
@@ -467,7 +477,6 @@ const editItem = async (item) => {
         file: null,
         url: topic.presentation?.path || null,
       },
-      // BU YERDA O'ZGARISH - to'g'ri array formatida
       ilovalar: Array.isArray(topic.app_files)
         ? topic.app_files.map((file) => ({
             id: file.id,
@@ -529,7 +538,6 @@ const confirmDelete = async () => {
   }
 }
 
-// Form submission handlers
 const handleFormSubmit = async (data) => {
   formLoading.value = true
   try {
@@ -634,6 +642,13 @@ watch(selectedDate, () => {
   options.page = 1
   loadMeetingInfos()
 })
+watch(
+  () => options.itemsPerPage,
+  () => {
+    options.page = 1
+    loadMeetingInfos()
+  },
+)
 </script>
 
 <style scoped>

@@ -71,7 +71,7 @@
           md="6"
           lg="4"
           class="mb-4"
-          v-if="informatingSellect.length"
+          v-if="informatingSellect"
         >
           <v-card class="meeting-card" @click="handleCardClick(item)" elevation="3">
             <v-card-text class="text-center pa-2">
@@ -88,7 +88,7 @@
           </v-card>
         </v-col>
 
-        <v-col v-if="!informatingSellect.length && !loading" cols="12" md="6">
+        <v-col v-if="!informatingSellect && !loading" cols="12" md="6">
           <v-card class="pa-8 text-center" variant="outlined" elevation="1">
             <v-icon size="48" color="grey">mdi-database-remove</v-icon>
             <h2 class="mt-4 mb-2">Ma'lumot mavjud emas</h2>
@@ -149,8 +149,8 @@ const getEventData = async () => {
 
     const res = await DirectorisActivity.getEventsAll(params)
 
-    if (res.data) {
-      informatingSellect.value = res.data || []
+    if (res && res.data) {
+      informatingSellect.value = res.data.data || []
       totalPages.value = res.data.total_pages || 0
 
       if (currentPage.value > totalPages.value && totalPages.value > 0) {

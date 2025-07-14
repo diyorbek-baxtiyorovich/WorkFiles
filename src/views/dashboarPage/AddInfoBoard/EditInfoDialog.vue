@@ -68,7 +68,6 @@
               </v-col>
             </v-row>
 
-            <!-- Tahrirlash preview -->
             <v-alert
               v-if="editData.year && editData.month && editData.day"
               type="info"
@@ -79,7 +78,8 @@
                 <strong>Yangi sarlavha:</strong>
               </template>
               <div class="mt-2">
-                "Mikrokreditbank" ATB Boshqaruvining {{ editData.year }} yil
+                "Mikrokreditbank" ATB Boshqaruvining
+                <span class="text-primary font-weight-bold"> {{ editData.year }}</span> yil
                 <span class="text-primary font-weight-bold">{{ editData.day }}</span>
                 -{{ getMonthName(editData.month) }}dagi navbatdagi majlisiga doir materiallar
                 to'plami
@@ -110,7 +110,7 @@
                       {{ getFileName(editData.agenda.url) }}
                     </span>
                   </div>
-                  <v-btn variant="text" @click="removeAgendaFile" :disabled="loading">
+                  <v-btn variant="text" @click="confirmRemoveFile('agenda')" :disabled="loading">
                     <v-icon color="error">mdi-delete</v-icon>
                   </v-btn>
                 </div>
@@ -123,13 +123,10 @@
                   show-size
                   variant="outlined"
                   density="comfortable"
-                  :rules="[rules.pdfFile]"
+                  :rules="[rules.required, rules.pdfFile]"
                   :readonly="loading"
                   @update:model-value="markAsModified"
                 />
-                <p class="text-caption text-medium-emphasis mt-2">
-                  Eski fayl o'chirsangi , yangi fayl almashtiriladi
-                </p>
               </v-card-text>
             </v-card>
 
@@ -158,7 +155,11 @@
                           {{ getFileName(editData.participants.tarkibiy.url) }}
                         </span>
                       </div>
-                      <v-btn variant="text" @click="removeTarFile" :disabled="loading">
+                      <v-btn
+                        variant="text"
+                        @click="confirmRemoveFile('tarkibiy')"
+                        :disabled="loading"
+                      >
                         <v-icon color="error">mdi-delete</v-icon>
                       </v-btn>
                     </div>
@@ -171,7 +172,7 @@
                       show-size
                       variant="outlined"
                       density="comfortable"
-                      :rules="[rules.pdfFile]"
+                      :rules="[rules.required, rules.pdfFile]"
                       :readonly="loading"
                       @update:model-value="markAsModified"
                     />
@@ -194,7 +195,11 @@
                           {{ getFileName(editData.participants.xududiy.url) }}
                         </span>
                       </div>
-                      <v-btn variant="text" @click="removeXudFile" :disabled="loading">
+                      <v-btn
+                        variant="text"
+                        @click="confirmRemoveFile('xududiy')"
+                        :disabled="loading"
+                      >
                         <v-icon color="error">mdi-delete</v-icon>
                       </v-btn>
                     </div>
@@ -207,7 +212,7 @@
                       show-size
                       variant="outlined"
                       density="comfortable"
-                      :rules="[rules.pdfFile]"
+                      :rules="[rules.required, rules.pdfFile]"
                       :readonly="loading"
                       @update:model-value="markAsModified"
                     />
@@ -261,16 +266,6 @@
                         </div>
                         <div class="d-flex align-center gap-2">
                           <v-btn
-                            icon
-                            color="primary"
-                            size="small"
-                            variant="text"
-                            @click="duplicateDocumentBlock(index)"
-                            :disabled="loading"
-                          >
-                            <v-icon size="18">mdi-content-copy</v-icon>
-                          </v-btn>
-                          <v-btn
                             v-if="editData.documentsList.length > 1"
                             icon
                             color="error"
@@ -303,7 +298,7 @@
                           <div class="d-flex align-center mb-2">
                             <span class="text-subtitle-2">Ma'lumotnoma</span>
                             <v-chip
-                              v-if="!!doc.malumotnoma"
+                              v-if="doc.malumotnoma?.url?.url"
                               class="ml-2"
                               size="small"
                               color="success"
@@ -333,7 +328,9 @@
                               size="small"
                               variant="text"
                               color="error"
-                              @click="removeRefrenseFile(index, doc.malumotnoma?.url?.url)"
+                              @click="
+                                confirmRemoveFile('reference', index, doc.malumotnoma?.url?.url)
+                              "
                               :disabled="loading"
                             >
                               <v-icon small>mdi-delete</v-icon>
@@ -357,7 +354,12 @@
                         <v-col cols="12" md="6">
                           <div class="d-flex align-center mb-2">
                             <span class="text-subtitle-2">Qaror loyihasi</span>
-                            <v-chip v-if="doc.qaror" class="ml-2" size="small" color="success">
+                            <v-chip
+                              v-if="doc.qaror?.url?.url"
+                              class="ml-2"
+                              size="small"
+                              color="success"
+                            >
                               Mavjud
                             </v-chip>
                           </div>
@@ -383,7 +385,7 @@
                               size="small"
                               variant="text"
                               color="error"
-                              @click="removeQarortFile(index, doc.qaror?.url?.url)"
+                              @click="confirmRemoveFile('resolution', index, doc.qaror?.url?.url)"
                               :disabled="loading"
                             >
                               <v-icon small>mdi-delete</v-icon>
@@ -407,7 +409,12 @@
                         <v-col cols="12" md="6">
                           <div class="d-flex align-center mb-2">
                             <span class="text-subtitle-2">Taqdimot</span>
-                            <v-chip v-if="doc.taqdimot" class="ml-2" size="small" color="success">
+                            <v-chip
+                              v-if="doc.taqdimot?.url?.url"
+                              class="ml-2"
+                              size="small"
+                              color="success"
+                            >
                               Mavjud
                             </v-chip>
                           </div>
@@ -434,7 +441,9 @@
                               size="small"
                               variant="text"
                               color="error"
-                              @click="removeTaqdimotFile(index, doc.taqdimot?.url?.url)"
+                              @click="
+                                confirmRemoveFile('presentation', index, doc.taqdimot?.url?.url)
+                              "
                               :disabled="loading"
                             >
                               <v-icon small>mdi-delete</v-icon>
@@ -506,7 +515,7 @@
                                 size="small"
                                 variant="text"
                                 color="error"
-                                @click="removeIlovaFile(index, ilovaIndex, file.path)"
+                                @click="confirmRemoveFile('app_file', index, file.path, ilovaIndex)"
                                 :disabled="loading"
                               >
                                 <v-icon small>mdi-delete</v-icon>
@@ -580,11 +589,27 @@
           E'tibor bering!
         </v-card-title>
 
-        <v-card-text> Saqlanmagan o'zgarishlar yo'qoladi. Davom etasizmi? </v-card-text>
+        <v-card-text> O'zgartirilgan o'zgarishlar yo'qoladi. Davom etasizmi? </v-card-text>
 
         <v-card-actions class="justify-end">
           <v-btn color="grey" variant="text" @click="handleModalCancel"> Bekor qilish </v-btn>
           <v-btn color="red" variant="flat" @click="handleModalConfirm"> Davom etish </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="modelDeleteItemInfo" max-width="500">
+      <v-card>
+        <v-card-title class="text-h6">
+          <v-icon color="warning" class="mr-2">mdi-alert</v-icon>
+          E'tibor bering!
+        </v-card-title>
+
+        <v-card-text> Bu faylni o'chirishni hohlaysizmi ? </v-card-text>
+
+        <v-card-actions class="justify-end">
+          <v-btn color="grey" variant="text" @click="deleteItemCancel"> Bekor qilish </v-btn>
+          <v-btn color="red" variant="flat" @click="deleteItemConfirm"> O'chirish </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -650,6 +675,14 @@ const hesDeleteInfoXud = ref(false)
 const showSuccessSnackbar = ref(false)
 const modelInfo = ref(false)
 const pendingAction = ref(null)
+const modelDeleteItemInfo = ref(false)
+const deleteTarget = ref({
+  type: null,
+  docIndex: null,
+  ilovaIndex: null,
+  url: null,
+})
+const pendingDeletions = ref([])
 
 const editData = ref({
   year: null,
@@ -699,89 +732,183 @@ const getShortFileName = (path) => {
   if (!path) return 'Nomaʼlum fayl'
   return decodeURIComponent(path.split('/').pop())
 }
+const markFileForDeletion = (type, docIndex = null, url = null, ilovaIndex = null) => {
+  // Pending deletions ga qo'shish
+  pendingDeletions.value.push({
+    type,
+    docIndex,
+    url,
+    ilovaIndex,
+    timestamp: Date.now(), // qayta tiklash uchun
+  })
 
-const removeIlovaFile = async (docIndex, ilovaIndex, url) => {
-  const ilovalar = editData.value.documentsList[docIndex].ilovalar
-  if (Array.isArray(ilovalar)) {
-    ilovalar.splice(ilovaIndex, 1)
-    markAsModified()
+  // UI da o'chirish
+  switch (type) {
+    case 'agenda':
+      hesDeleteInfo.value = true
+      editData.value.agenda = { file: null, url: null }
+      break
+    case 'xududiy':
+      hesDeleteInfoXud.value = true
+      editData.value.participants.xududiy = { file: null, url: null }
+      break
+    case 'tarkibiy':
+      hesDeleteInfoTar.value = true
+      editData.value.participants.tarkibiy = { file: null, url: null }
+      break
+    case 'reference':
+      const refDoc = editData.value.documentsList[docIndex]
+      if (refDoc && refDoc.malumotnoma) {
+        refDoc.malumotnoma = { file: null, url: null }
+      }
+      break
+    case 'presentation':
+      const presDoc = editData.value.documentsList[docIndex]
+      if (presDoc && presDoc.taqdimot) {
+        presDoc.taqdimot = { file: null, url: null }
+      }
+      break
+    case 'resolution':
+      const resDoc = editData.value.documentsList[docIndex]
+      if (resDoc && resDoc.qaror) {
+        resDoc.qaror = { file: null, url: null }
+      }
+      break
+    case 'app_file':
+      const appDoc = editData.value.documentsList[docIndex]
+      if (appDoc && Array.isArray(appDoc.ilovalar)) {
+        appDoc.ilovalar.splice(ilovaIndex, 1)
+      }
+      break
   }
-  const param = {
-    path: url,
-    type_: 'app_file',
-  }
-  try {
-    const result = await DirectorisActivity.deleteEventDocsById(param)
-    successMessage.value = "Ma'lumot muvaffaqiyatli o'chirildi"
-    showSuccessSnackbar.value = true
-  } catch (error) {
-    console.log(error)
-  }
-}
 
-const removeTaqdimotFile = async (docIndex, url) => {
-  const doc = editData.value.documentsList[docIndex]
-  if (doc && doc.taqdimot) {
-    doc.taqdimot = { file: null, url: null }
-    markAsModified()
-  }
-  const param = {
-    path: url,
-    type_: 'presentation',
-  }
-  try {
-    const result = await DirectorisActivity.deleteEventDocsById(param)
-    successMessage.value = "Ma'lumot muvaffaqiyatli o'chirildi"
-    showSuccessSnackbar.value = true
-  } catch (error) {
-    console.log(error)
-  }
-}
-const removeQarortFile = async (docIndex, url) => {
-  const doc = editData.value.documentsList[docIndex]
-  if (doc && doc.qaror) {
-    doc.qaror = { file: null, url: null }
-    markAsModified()
-  }
-  const param = {
-    path: url,
-    type_: 'resolution',
-  }
-  try {
-    const result = await DirectorisActivity.deleteEventDocsById(param)
-    successMessage.value = "Ma'lumot muvaffaqiyatli o'chirildi"
-    showSuccessSnackbar.value = true
-  } catch (error) {
-    console.log(error)
-  }
-}
-const removeRefrenseFile = async (docIndex, url) => {
-  const doc = editData.value.documentsList[docIndex]
-  if (doc && doc.malumotnoma) {
-    doc.malumotnoma = { file: null, url: null }
-    markAsModified()
-  }
-  const param = {
-    path: url,
-    type_: 'reference',
-  }
-  try {
-    const result = await DirectorisActivity.deleteEventDocsById(param)
-    successMessage.value = "Ma'lumot muvaffaqiyatli o'chirildi"
-    showSuccessSnackbar.value = true
-  } catch (error) {
-    console.log(error)
-  }
+  markAsModified()
 }
 
-const removeAgendaFile = () => {
-  hesDeleteInfo.value = true
+const cancelPendingDeletions = () => {
+  // Barcha pending deletions ni bekor qilish va UI ni qayta tiklash
+  pendingDeletions.value.forEach((deletion) => {
+    switch (deletion.type) {
+      case 'agenda':
+        hesDeleteInfo.value = false
+        editData.value.agenda = {
+          file: null,
+          url: props.data.agenda || null,
+        }
+        break
+      case 'xududiy':
+        hesDeleteInfoXud.value = false
+        editData.value.participants.xududiy = {
+          file: null,
+          url: props.data.participants?.xududiy || null,
+        }
+        break
+      case 'tarkibiy':
+        hesDeleteInfoTar.value = false
+        editData.value.participants.tarkibiy = {
+          file: null,
+          url: props.data.participants?.tarkibiy || null,
+        }
+        break
+      case 'reference':
+        const originalRefDoc = props.data.documentsList?.[deletion.docIndex]
+        if (originalRefDoc && editData.value.documentsList[deletion.docIndex]) {
+          editData.value.documentsList[deletion.docIndex].malumotnoma = {
+            file: null,
+            url: originalRefDoc.malumotnoma || null,
+          }
+        }
+        break
+      case 'presentation':
+        const originalPresDoc = props.data.documentsList?.[deletion.docIndex]
+        if (originalPresDoc && editData.value.documentsList[deletion.docIndex]) {
+          editData.value.documentsList[deletion.docIndex].taqdimot = {
+            file: null,
+            url: originalPresDoc.taqdimot || null,
+          }
+        }
+        break
+      case 'resolution':
+        const originalResDoc = props.data.documentsList?.[deletion.docIndex]
+        if (originalResDoc && editData.value.documentsList[deletion.docIndex]) {
+          editData.value.documentsList[deletion.docIndex].qaror = {
+            file: null,
+            url: originalResDoc.qaror || null,
+          }
+        }
+        break
+      case 'app_file':
+        const originalAppDoc = props.data.documentsList?.[deletion.docIndex]
+        if (
+          originalAppDoc &&
+          originalAppDoc.ilovalar &&
+          editData.value.documentsList[deletion.docIndex]
+        ) {
+          editData.value.documentsList[deletion.docIndex].ilovalar = [
+            ...(originalAppDoc.ilovalar || []),
+          ]
+        }
+        break
+    }
+  })
+
+  // Pending deletions ni tozalash
+  pendingDeletions.value = []
 }
-const removeXudFile = () => {
-  hesDeleteInfoXud.value = true
+const processPendingDeletions = async () => {
+  const deletionPromises = pendingDeletions.value.map(async (deletion) => {
+    const param = {
+      path: deletion.url,
+      type_:
+        deletion.type === 'app_file'
+          ? 'app_file'
+          : deletion.type === 'presentation'
+            ? 'presentation'
+            : deletion.type === 'resolution'
+              ? 'resolution'
+              : deletion.type === 'reference'
+                ? 'reference'
+                : deletion.type,
+    }
+
+    try {
+      await DirectorisActivity.deleteEventDocsById(param)
+      console.log(`Successfully deleted ${deletion.type} file:`, deletion.url)
+    } catch (error) {
+      console.error(`Failed to delete ${deletion.type} file:`, error)
+      // Xatolik yuz berganda faylni qayta tiklash mumkin
+      throw error
+    }
+  })
+
+  try {
+    await Promise.all(deletionPromises)
+    pendingDeletions.value = []
+
+    successMessage.value = "O'chirilgan fayllar muvaffaqiyatli saqlandi"
+    showSuccessSnackbar.value = true
+  } catch (error) {
+    console.error('Some deletions failed:', error)
+  }
 }
-const removeTarFile = () => {
-  hesDeleteInfoTar.value = true
+
+const confirmRemoveFile = (type, docIndex = null, url = null, ilovaIndex = null) => {
+  deleteTarget.value = { type, docIndex, url, ilovaIndex }
+  modelDeleteItemInfo.value = true
+}
+const deleteItemConfirm = async () => {
+  const { type, docIndex, url, ilovaIndex } = deleteTarget.value
+
+  // Faylni o'chirish uchun belgilash (haqiqiy o'chirish emas)
+  markFileForDeletion(type, docIndex, url, ilovaIndex)
+
+  modelDeleteItemInfo.value = false
+  deleteTarget.value = { type: null, docIndex: null, ilovaIndex: null, url: null }
+}
+
+const deleteItemCancel = () => {
+  modelDeleteItemInfo.value = false
+  deleteTarget.value = { type: null, docIndex: null, ilovaIndex: null, url: null }
 }
 
 const documentsCount = computed(() => {
@@ -793,7 +920,7 @@ const isDocumentsValid = computed(() => {
 })
 
 const rules = {
-  required: (value) => !!value || 'Bu maydon majburiy',
+  required: (value) => !!value || 'Yangi faylni yuklash majburiy!\n' + '\n',
   year: (value) => {
     const year = parseInt(value)
     return (year >= 2000 && year <= 2100) || "Yil 2000-2100 oralig'ida bo'lishi kerak"
@@ -850,37 +977,6 @@ const removeDocumentBlock = (index) => {
   }
 }
 
-const duplicateDocumentBlock = (index) => {
-  const originalDoc = editData.value.documentsList[index]
-  if (!originalDoc) return
-
-  const duplicatedDoc = {
-    id: null,
-    sarlavhasi: (originalDoc.sarlavhasi || '') + ' (nusxa)',
-    malumotnoma: {
-      file: null,
-      url: originalDoc.malumotnoma?.url || null,
-    },
-    qaror: {
-      file: null,
-      url: originalDoc.qaror?.url || null,
-    },
-    taqdimot: {
-      file: null,
-      url: originalDoc.taqdimot?.url || null,
-    },
-    ilovalar: Array.isArray(originalDoc.ilovalar)
-      ? originalDoc.ilovalar.map((ilova) => ({
-          file: null,
-          url: ilova?.url || ilova?.path || null,
-        }))
-      : [],
-  }
-
-  editData.value.documentsList.splice(index + 1, 0, duplicatedDoc)
-  markAsModified()
-}
-
 const initializeDocuments = () => {
   editData.value.documentsList = [
     {
@@ -905,12 +1001,12 @@ const handleSubmit = async () => {
 
   const updatedData = {}
 
-  // Sana o'zgarishi
+  // Asosiy ma'lumotlar
   if (editData.value.year !== props.data.year) updatedData.year = editData.value.year
   if (editData.value.month !== props.data.month) updatedData.month = editData.value.month
   if (editData.value.day !== props.data.day) updatedData.day = editData.value.day
 
-  // Agenda
+  // Agenda fayli
   if (editData.value.agenda?.file instanceof File) {
     updatedData.agenda = editData.value.agenda.file
   }
@@ -927,16 +1023,29 @@ const handleSubmit = async () => {
     updatedData.participants = participantUpdates
   }
 
+  const hasFileChanged = (orig, current) => {
+    return (
+      current?.file instanceof File ||
+      (orig?.url?.url && !current?.url?.url) ||
+      (!orig?.url?.url && current?.url?.url)
+    )
+  }
+
   // Documents
   const documentsChanged = editData.value.documentsList.some((doc, i) => {
-    const originalDoc = props.data.documentsList?.[i]
+    const originalDoc = props.data.documentsList?.[i] || {}
+
+    const ilovaCountChanged = (originalDoc.ilovalar?.length || 0) !== (doc.ilovalar?.length || 0)
+    const ilovaFileAdded =
+      Array.isArray(doc.newIlovalar) && doc.newIlovalar.some((f) => f instanceof File)
 
     return (
-      doc.sarlavhasi !== originalDoc?.sarlavhasi ||
-      doc.malumotnoma?.file instanceof File ||
-      doc.qaror?.file instanceof File ||
-      doc.taqdimot?.file instanceof File ||
-      (doc.newIlovalar && doc.newIlovalar.some((f) => f instanceof File))
+      doc.sarlavhasi !== originalDoc.sarlavhasi ||
+      hasFileChanged(originalDoc.malumotnoma, doc.malumotnoma) ||
+      hasFileChanged(originalDoc.qaror, doc.qaror) ||
+      hasFileChanged(originalDoc.taqdimot, doc.taqdimot) ||
+      ilovaCountChanged ||
+      ilovaFileAdded
     )
   })
 
@@ -949,22 +1058,51 @@ const handleSubmit = async () => {
       return {
         id: doc.id || null,
         sarlavhasi: doc.sarlavhasi || '',
-        malumotnoma: doc.malumotnoma?.file instanceof File ? doc.malumotnoma.file : null,
-        qaror: doc.qaror?.file instanceof File ? doc.qaror.file : null,
-        taqdimot: doc.taqdimot?.file instanceof File ? doc.taqdimot.file : null,
-        ilovalar: ilovalarFiles,
+        malumotnoma:
+          doc.malumotnoma?.file instanceof File
+            ? doc.malumotnoma.file
+            : doc.malumotnoma?.url?.url === null
+              ? null
+              : undefined,
+        qaror:
+          doc.qaror?.file instanceof File
+            ? doc.qaror.file
+            : doc.qaror?.url?.url === null
+              ? null
+              : undefined,
+        taqdimot:
+          doc.taqdimot?.file instanceof File
+            ? doc.taqdimot.file
+            : doc.taqdimot?.url?.url === null
+              ? null
+              : undefined,
+        ilovalar: ilovalarFiles.length > 0 ? ilovalarFiles : undefined,
       }
     })
   }
 
-  if (Object.keys(updatedData).length === 0) {
+  if (Object.keys(updatedData).length === 0 && pendingDeletions.value.length === 0) {
     console.log("Hech qanday o'zgarish yo'q.")
     return
   }
 
-  console.log("Yuborilayotgan yangilangan ma'lumot:", updatedData)
-  emit('update', updatedData)
-  hasModifications.value = false
+  try {
+    // Avval pending deletions ni amalga oshirish
+    if (pendingDeletions.value.length > 0) {
+      await processPendingDeletions()
+    }
+
+    // Keyin yangilashni yuborish
+    if (Object.keys(updatedData).length > 0) {
+      console.log("Yuborilayotgan yangilangan ma'lumot:", updatedData)
+      emit('update', updatedData)
+    }
+
+    hasModifications.value = false
+  } catch (error) {
+    console.error('Yangilashda xatolik:', error)
+    // Xatolik yuz berganda foydalanuvchiga xabar berish
+  }
 }
 
 const handleCancel = () => {
@@ -972,7 +1110,7 @@ const handleCancel = () => {
   hesDeleteInfoXud.value = false
   hesDeleteInfoTar.value = false
 
-  if (hasModifications.value) {
+  if (hasModifications.value || pendingDeletions.value.length > 0) {
     pendingAction.value = 'cancel'
     modelInfo.value = true
   } else {
@@ -985,14 +1123,13 @@ const handleClose = () => {
   hesDeleteInfoXud.value = false
   hesDeleteInfoTar.value = false
 
-  if (hasModifications.value) {
+  if (hasModifications.value || pendingDeletions.value.length > 0) {
     pendingAction.value = 'close'
     modelInfo.value = true
   } else {
     emit('close')
   }
 }
-
 const handleModalCancel = () => {
   modelInfo.value = false
   pendingAction.value = null
@@ -1000,6 +1137,8 @@ const handleModalCancel = () => {
 
 const handleModalConfirm = () => {
   modelInfo.value = false
+
+  cancelPendingDeletions()
 
   if (pendingAction.value === 'cancel') {
     emit('cancel')
@@ -1015,18 +1154,15 @@ const loadData = () => {
 
     const { year, month, day, agenda, participants, documentsList, documents } = props.data
 
-    // Sana
     editData.value.year = year || null
     editData.value.month = month || null
     editData.value.day = day || null
 
-    // Agenda
     editData.value.agenda = {
       file: null,
       url: agenda || null,
     }
 
-    // Participants
     editData.value.participants = {
       tarkibiy: {
         file: null,
@@ -1038,7 +1174,6 @@ const loadData = () => {
       },
     }
 
-    // Documents - BU YERDA HAM O'ZGARISH
     const sourceDocs =
       Array.isArray(documentsList) && documentsList.length ? documentsList : documents || []
 

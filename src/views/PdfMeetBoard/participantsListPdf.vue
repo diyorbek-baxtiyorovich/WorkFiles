@@ -35,7 +35,6 @@
       <p class="mt-4">PDF topilmadi</p>
     </div>
 
-    <!-- PDF tugmalari -->
     <div class="tabs-container">
       <v-tabs
         v-model="activeTab"
@@ -123,7 +122,7 @@ const initializePdfs = () => {
       if (decodedFirstUrl) {
         pdfSections.value.push({
           id: 'first',
-          name: getPdfLabelFromUrl(decodedFirstUrl),
+          name: "Tarkibiy bo'linmalar",
           type: 'first',
           url: decodedFirstUrl,
         })
@@ -132,7 +131,7 @@ const initializePdfs = () => {
       if (decodedSecondUrl) {
         pdfSections.value.push({
           id: 'second',
-          name: getPdfLabelFromUrl(decodedSecondUrl),
+          name: "Xududiy bo'linmalar",
           type: 'second',
           url: decodedSecondUrl,
         })
@@ -161,8 +160,8 @@ const initializePdfs = () => {
 const getPdfLabelFromUrl = (url) => {
   if (!url) return 'PDF'
 
-  if (url.includes('locals')) return "Tarkibiy bo'limlar"
-  if (url.includes('regionals')) return "Xududiy bo'limlar"
+  if (url.includes('locals')) return "Tarkibiy bo'linmalar"
+  if (url.includes('regionals')) return "Xududiy bo'linmalar"
 
   return 'PDF'
 }

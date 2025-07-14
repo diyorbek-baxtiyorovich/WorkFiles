@@ -146,7 +146,6 @@ const initializeFiles = () => {
             )
             if (match) targetSection = match
           } else {
-            // Boshqa turlarda aniqlash
             const match = fileSections.value.find((f) => f.type === activeType)
             if (match) targetSection = match
           }
