@@ -9,6 +9,7 @@
         </template>
       </v-tooltip>
     </div>
+
     <div v-if="loading" class="loading-container">
       <v-progress-circular indeterminate color="primary" size="64" />
       <p class="mt-4">Fayl yuklanmoqda...</p>
@@ -20,19 +21,8 @@
       <v-btn @click="retryLoad" color="primary" class="mt-4">Qayta urinish</v-btn>
     </div>
 
-    <div v-else-if="currentFileUrl" class="file-container">
-      <iframe
-        :src="currentFileUrl"
-        class="file-iframe"
-        width="100%"
-        height="800px"
-        frameborder="0"
-      ></iframe>
-    </div>
-
-    <div v-else class="no-file-container">
-      <v-icon color="grey" size="64">mdi-file-outline</v-icon>
-      <p class="mt-4">Fayl topilmadi</p>
+    <div v-else class="file-container">
+      <div ref="pdfWrapper" class="pdf-pages" />
     </div>
 
     <div class="tabs-container" v-if="fileSections.length > 1">
@@ -66,42 +56,88 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/routerId.js'
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf'
+import pdfWorker from 'pdfjs-dist/legacy/build/pdf.worker?url'
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 
 const router = useRouter()
 const appStore = useAppStore()
-
 const route = useRoute()
+
 const currentFileUrl = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const activeTab = ref(0)
 const fileSections = ref([])
+const pdfWrapper = ref(null)
 
-const loadFile = (section) => {
-  loading.value = true
-  error.value = null
-
+const renderPDF = async (url) => {
   try {
-    if (section && section.url) {
-      currentFileUrl.value = section.url
-      const sectionIndex = fileSections.value.findIndex((s) => s.id === section.id)
-      if (sectionIndex !== -1) {
-        activeTab.value = sectionIndex
-      }
-    } else {
-      throw new Error('Fayl URL topilmadi')
+    if (!pdfWrapper.value) return
+    pdfWrapper.value.innerHTML = ''
+
+    const loadingTask = pdfjsLib.getDocument(url)
+    const pdf = await loadingTask.promise
+
+    const ratio = window.devicePixelRatio || 1
+    const screenWidth = window.innerWidth
+
+    let scale = 1.25
+    if (screenWidth < 768) {
+      scale = 0.6
+    }
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum)
+      const viewport = page.getViewport({ scale })
+
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('2d')
+
+      canvas.style.width = viewport.width + 'px'
+      canvas.style.height = viewport.height + 'px'
+
+      canvas.width = viewport.width * ratio
+      canvas.height = viewport.height * ratio
+
+      context.setTransform(ratio, 0, 0, ratio, 0, 0)
+
+      await page.render({ canvasContext: context, viewport }).promise
+      pdfWrapper.value.appendChild(canvas)
     }
   } catch (err) {
-    error.value = `Fayl yuklashda xatolik: ${err.message}`
+    error.value = `PDF yuklashda xatolik: ${err.message}`
     currentFileUrl.value = null
   } finally {
     loading.value = false
   }
 }
+
+const loadFile = async (section) => {
+  try {
+    if (section && section.url) {
+      currentFileUrl.value = section.url
+      const sectionIndex = fileSections.value.findIndex((s) => s.id === section.id)
+
+      if (sectionIndex !== -1) {
+        activeTab.value = sectionIndex
+      }
+
+      await nextTick()
+      await renderPDF(section.url)
+    } else {
+      throw new Error('PDF URL topilmadi')
+    }
+  } catch (err) {
+    error.value = `PDF yuklashda xatolik: ${err.message}`
+    currentFileUrl.value = null
+  }
+}
+
 const initializeFiles = () => {
   loading.value = true
   error.value = null
@@ -164,9 +200,7 @@ const initializeFiles = () => {
   }
 }
 
-const retryLoad = () => {
-  initializeFiles()
-}
+const retryLoad = () => initializeFiles()
 
 const getTabClass = (type) => {
   const classes = {
@@ -178,17 +212,15 @@ const getTabClass = (type) => {
   return classes[type] || 'default-tab'
 }
 
+const exit = async () => {
+  const boardId = appStore.selectedId
+  if (boardId) router.push({ name: 'BoardMeeting', params: { id: boardId } })
+  else router.push({ name: 'BoardMeeting' })
+}
+
 onMounted(() => {
   initializeFiles()
 })
-const exit = async () => {
-  const boardId = appStore.selectedId
-  if (boardId) {
-    router.push({ name: 'BoardMeeting', params: { id: boardId } })
-  } else {
-    router.push({ name: 'BoardMeeting' })
-  }
-}
 
 watch(
   () => route.query,
@@ -210,15 +242,16 @@ watch(
 .PrevExit {
   position: absolute;
   left: 0;
-  top: 60px;
+  top: 0;
   z-index: 10000;
 }
 
 .file-container {
   flex: 1;
   width: 100%;
+  overflow-y: auto;
   position: relative;
-  overflow: hidden;
+  background-color: white;
 }
 
 .file-iframe {
@@ -283,7 +316,12 @@ watch(
   justify-content: center;
   padding: 8px 16px;
 }
-
+.pdf-pages {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 .tab-text {
   font-size: 14px;
   font-weight: 500;
@@ -310,6 +348,9 @@ watch(
 }
 
 @media (max-width: 768px) {
+  .files-viewer-container {
+    height: 87vh;
+  }
   .tab-content {
     padding: 4px 8px;
   }

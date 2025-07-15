@@ -733,16 +733,14 @@ const getShortFileName = (path) => {
   return decodeURIComponent(path.split('/').pop())
 }
 const markFileForDeletion = (type, docIndex = null, url = null, ilovaIndex = null) => {
-  // Pending deletions ga qo'shish
   pendingDeletions.value.push({
     type,
     docIndex,
     url,
     ilovaIndex,
-    timestamp: Date.now(), // qayta tiklash uchun
+    timestamp: Date.now(),
   })
 
-  // UI da o'chirish
   switch (type) {
     case 'agenda':
       hesDeleteInfo.value = true
@@ -786,7 +784,6 @@ const markFileForDeletion = (type, docIndex = null, url = null, ilovaIndex = nul
 }
 
 const cancelPendingDeletions = () => {
-  // Barcha pending deletions ni bekor qilish va UI ni qayta tiklash
   pendingDeletions.value.forEach((deletion) => {
     switch (deletion.type) {
       case 'agenda':
@@ -852,7 +849,6 @@ const cancelPendingDeletions = () => {
     }
   })
 
-  // Pending deletions ni tozalash
   pendingDeletions.value = []
 }
 const processPendingDeletions = async () => {
@@ -876,7 +872,6 @@ const processPendingDeletions = async () => {
       console.log(`Successfully deleted ${deletion.type} file:`, deletion.url)
     } catch (error) {
       console.error(`Failed to delete ${deletion.type} file:`, error)
-      // Xatolik yuz berganda faylni qayta tiklash mumkin
       throw error
     }
   })
@@ -1001,17 +996,14 @@ const handleSubmit = async () => {
 
   const updatedData = {}
 
-  // Asosiy ma'lumotlar
   if (editData.value.year !== props.data.year) updatedData.year = editData.value.year
   if (editData.value.month !== props.data.month) updatedData.month = editData.value.month
   if (editData.value.day !== props.data.day) updatedData.day = editData.value.day
 
-  // Agenda fayli
   if (editData.value.agenda?.file instanceof File) {
     updatedData.agenda = editData.value.agenda.file
   }
 
-  // Participants
   const participantUpdates = {}
   if (editData.value.participants.tarkibiy?.file instanceof File) {
     participantUpdates.tarkibiy = editData.value.participants.tarkibiy.file
@@ -1031,7 +1023,6 @@ const handleSubmit = async () => {
     )
   }
 
-  // Documents
   const documentsChanged = editData.value.documentsList.some((doc, i) => {
     const originalDoc = props.data.documentsList?.[i] || {}
 
@@ -1087,12 +1078,10 @@ const handleSubmit = async () => {
   }
 
   try {
-    // Avval pending deletions ni amalga oshirish
     if (pendingDeletions.value.length > 0) {
       await processPendingDeletions()
     }
 
-    // Keyin yangilashni yuborish
     if (Object.keys(updatedData).length > 0) {
       console.log("Yuborilayotgan yangilangan ma'lumot:", updatedData)
       emit('update', updatedData)
@@ -1101,7 +1090,6 @@ const handleSubmit = async () => {
     hasModifications.value = false
   } catch (error) {
     console.error('Yangilashda xatolik:', error)
-    // Xatolik yuz berganda foydalanuvchiga xabar berish
   }
 }
 

@@ -1,160 +1,130 @@
 <template>
-  <div class="pdf-viewer-container">
-    <div class="PrevExit">
-      <v-tooltip text="Orqaga qaytish">
-        <template #activator="{ props }">
-          <v-btn icon color="blue" v-bind="props" @click="exit">
-            <v-icon>mdi-arrow-left-bold</v-icon>
-          </v-btn>
-        </template>
-      </v-tooltip>
-    </div>
-    <div v-if="loading" class="loading-container">
-      <v-progress-circular indeterminate color="primary" size="64" />
-      <p class="mt-4">PDF yuklanmoqda...</p>
+  <div class="pdf-viewer">
+    <v-btn icon class="back-btn" @click="goBack">
+      <v-icon>mdi-arrow-left</v-icon>
+    </v-btn>
+
+    <div v-if="loading" class="loading">
+      <v-progress-circular indeterminate color="primary" />
+      <p>Yuklanmoqda...</p>
     </div>
 
-    <div v-else-if="error" class="error-container">
-      <v-icon color="error" size="48">mdi-alert-circle</v-icon>
-      <p class="mt-4 text-error">{{ error }}</p>
-      <v-btn @click="retryLoad" color="primary" class="mt-4">Qayta urinish</v-btn>
-    </div>
+    <div v-if="error" class="error">{{ error }}</div>
 
-    <div v-else-if="currentPdfUrl" class="pdf-container">
-      <iframe
-        :src="currentPdfUrl"
-        class="pdf-iframe"
-        width="100%"
-        height="800px"
-        frameborder="0"
-      ></iframe>
-    </div>
-
-    <div v-else class="no-pdf-container">
-      <v-icon color="grey" size="64">mdi-file-pdf-box</v-icon>
-      <p class="mt-4">PDF topilmadi</p>
-    </div>
+    <div v-show="!loading && !error" ref="pdfWrapper" class="pdf-wrapper" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf'
+import pdfWorker from 'pdfjs-dist/legacy/build/pdf.worker?url'
 
-const router = useRouter()
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
+
 const route = useRoute()
-const currentPdfUrl = ref(null)
-const loading = ref(false)
+const router = useRouter()
+
+const loading = ref(true)
 const error = ref(null)
+const pdfWrapper = ref(null)
 
-const loadPdf = async () => {
-  loading.value = true
-  error.value = null
+const goBack = () => router.go(-1)
 
+const renderPDF = async (url) => {
   try {
-    const pdfUrl = route.query.pdfUrl || route.params.pdfUrl
+    const loadingTask = pdfjsLib.getDocument(url)
+    const pdf = await loadingTask.promise
 
-    if (pdfUrl) {
-      currentPdfUrl.value = decodeURIComponent(pdfUrl)
-    } else {
-      throw new Error('PDF manzili yo‘q')
+    const ratio = window.devicePixelRatio || 1
+    const screenWidth = window.innerWidth
+    let scale = screenWidth < 768 ? 0.7 : 1.2
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum)
+      const viewport = page.getViewport({ scale })
+
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('2d')
+
+      canvas.width = viewport.width * ratio
+      canvas.height = viewport.height * ratio
+
+      canvas.style.width = viewport.width + 'px'
+      canvas.style.height = viewport.height + 'px'
+
+      context.setTransform(ratio, 0, 0, ratio, 0, 0)
+
+      await page.render({ canvasContext: context, viewport }).promise
+      pdfWrapper.value.appendChild(canvas)
     }
   } catch (err) {
-    error.value = `PDF yuklashda xatolik: ${err.message}`
-    currentPdfUrl.value = null
+    console.error(err)
+    error.value = `Xatolik: ${err.message}`
   } finally {
     loading.value = false
   }
 }
 
-const retryLoad = () => {
-  loadPdf()
-}
-const exit = async () => {
-  router.go(-1)
-}
+onMounted(async () => {
+  const rawUrl = route.query.pdfUrl || route.params.pdfUrl
+  if (!rawUrl) {
+    error.value = 'PDF URL topilmadi'
+    loading.value = false
+    return
+  }
 
-onMounted(loadPdf)
+  const decodedUrl = decodeURIComponent(rawUrl)
 
-watch(() => route.query.pdfUrl, loadPdf)
-watch(() => route.params.pdfUrl, loadPdf)
+  await nextTick()
+  renderPDF(decodedUrl)
+})
 </script>
 
 <style scoped>
-.pdf-viewer-container {
+.pdf-viewer {
   position: relative;
-  height: auto;
-  display: flex;
-  flex-direction: column;
-  background-color: #f5f5f5;
-}
-.PrevExit {
-  position: absolute;
-  left: 0;
-  top: 60px;
-  z-index: 10000;
+  padding: 20px;
+  min-height: 100vh;
+  background: #f8f8f8;
 }
 
-.pdf-display-area {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
+.back-btn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
 }
 
-.pdf-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.pdf-object {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-.pdf-embed {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-.loading-container,
-.error-container,
-.no-pdf-container {
+.pdf-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100%;
-  text-align: center;
+  overflow-x: auto;
+  touch-action: manipulation;
+  padding-top: 70px;
 }
 
-.loading-container {
+.pdf-canvas {
   background: white;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-width: 100%;
+  height: auto;
 }
 
-.error-container {
-  background: #fafafa;
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 100px;
+  color: #666;
 }
 
-.no-pdf-container {
-  background: #f5f5f5;
-}
-
-@media (max-width: 768px) {
-  .pdf-viewer-container {
-    height: 100vh;
-  }
-}
-
-@media (max-width: 420px) {
-  .PrevExit {
-    position: absolute;
-    left: 2px;
-    top: 2px;
-    z-index: 10000;
-  }
+.error {
+  color: red;
+  margin-top: 20px;
 }
 </style>
