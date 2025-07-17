@@ -3,7 +3,7 @@
     <v-card class="mb-2 px-4">
       <v-row align="center" dense>
         <!-- Qidiruv maydoni -->
-        <v-col cols="12" md="4">
+        <v-col cols="12" md="3">
           <v-text-field
             v-model="search"
             label="Qidirish..."
@@ -15,9 +15,21 @@
             hide-details
           />
         </v-col>
-
-        <!-- Sana tanlash -->
-        <v-col cols="12" md="3" class="mt-5">
+        <v-col cols="12" md="2">
+          <v-autocomplete
+            v-model="selectedStatus"
+            :items="statusItem"
+            item-title="label"
+            label="Status"
+            variant="outlined"
+            density="comfortable"
+            item-value="value"
+            clearable
+            hide-details
+            prepend-inner-icon="mdi-filter"
+          />
+        </v-col>
+        <v-col cols="12" md="2" class="mt-5">
           <v-menu v-model="startMenu" :close-on-content-click="false">
             <template #activator="{ props }">
               <v-text-field
@@ -44,14 +56,11 @@
           </v-menu>
         </v-col>
 
-        <!-- Filtrlarni tozalash tugmasi -->
         <v-col cols="12" md="2">
           <v-btn color="blue" variant="text" class="clearIcons" @click="clearFilters">
             <v-icon start size="30">mdi-filter-remove</v-icon>
           </v-btn>
         </v-col>
-
-        <!-- Yangi ma'lumotlar qo'shish tugmasi - o'ng tomonda -->
         <v-col cols="12" md="3" class="d-flex justify-end">
           <v-btn
             color="primary"
@@ -68,13 +77,14 @@
     </v-card>
 
     <v-card class="data-table-card" elevation="2">
-      <v-table>
+      <v-table style="height: 400px; overflow-y: auto">
         <thead>
           <tr>
             <th>#</th>
-            <th>Sarlavha</th>
+            <th style="width: 450px">Sarlavha</th>
             <th>Sana</th>
             <th>Yaratilgan sana</th>
+            <th>Status</th>
             <th>Amallar</th>
           </tr>
         </thead>
@@ -90,12 +100,64 @@
             <td>{{ formatDateType(item) }}</td>
             <td>{{ formatDate(item.recorded_date) }}</td>
             <td>
-              <v-btn icon size="small" variant="plain" @click.stop="editItem(item)">
-                <v-icon size="20" color="blue">mdi-pencil</v-icon>
-              </v-btn>
-              <v-btn icon size="small" variant="plain" @click.stop="deleteItem(item)">
-                <v-icon size="20" color="error">mdi-delete</v-icon>
-              </v-btn>
+              <v-chip
+                :color="item.is_archived ? 'orange' : 'green'"
+                :variant="item.is_archived ? 'tonal' : 'tonal'"
+                size="small"
+              >
+                <v-icon
+                  :icon="item.is_archived ? 'mdi-archive' : 'mdi-archive-off'"
+                  start
+                  size="14"
+                />
+                {{ item.is_archived ? 'Arxivda' : 'Arxivdan chiqdi' }}
+              </v-chip>
+            </td>
+            <td>
+              <v-tooltip text="Tahrirlash">
+                <template #activator="{ props }">
+                  <v-btn
+                    icon
+                    size="small"
+                    variant="plain"
+                    v-bind="props"
+                    @click.stop="editItem(item)"
+                  >
+                    <v-icon size="20" color="blue">mdi-pencil</v-icon>
+                  </v-btn>
+                </template>
+              </v-tooltip>
+
+              <v-tooltip text="O'chirish">
+                <template #activator="{ props }">
+                  <v-btn
+                    icon
+                    size="small"
+                    variant="plain"
+                    v-bind="props"
+                    @click.stop="deleteItem(item)"
+                  >
+                    <v-icon size="20" color="error">mdi-delete</v-icon>
+                  </v-btn>
+                </template>
+              </v-tooltip>
+
+              <v-tooltip :text="item.is_archived ? 'Arxivdan chiqarish' : 'Arxivlash'">
+                <template #activator="{ props }">
+                  <v-btn
+                    icon
+                    size="small"
+                    variant="plain"
+                    v-bind="props"
+                    @click.stop="toggleArchive(item)"
+                    :loading="archiveLoading && archiveItemId === item.id"
+                  >
+                    <v-icon size="20" :color="item.is_archived ? 'success' : 'warning'">
+                      {{ item.is_archived ? 'mdi-archive-arrow-up' : 'mdi-archive' }}
+                    </v-icon>
+                  </v-btn>
+                </template>
+              </v-tooltip>
             </td>
           </tr>
         </tbody>
@@ -164,6 +226,7 @@
 
     <!--    eye component-->
     <ViewDataInfo v-model="dialogView" :meeting-data="viewingItem" />
+
     <!-- Delete Dialog -->
     <v-dialog v-model="dialogDelete" max-width="400px">
       <v-card>
@@ -185,7 +248,40 @@
       </v-card>
     </v-dialog>
 
-    <!-- Success/Error Snackbars -->
+    <!-- Archive Dialog -->
+    <v-dialog v-model="dialogArchive" max-width="400px">
+      <v-card>
+        <v-card-title class="text-h5">
+          <v-icon :color="itemToArchive?.is_archived ? 'success' : 'warning'" class="mr-2">
+            {{ itemToArchive?.is_archived ? 'mdi-archive-off' : 'mdi-archive' }}
+          </v-icon>
+          {{ itemToArchive?.is_archived ? 'Arxivdan chiqarish' : 'Arxivlash' }}
+        </v-card-title>
+        <v-card-text>
+          <p v-if="itemToArchive?.is_archived">
+            "<strong>{{ itemToArchive?.title }}</strong
+            >" ma'lumotlarini arxivdan chiqarmoqchimisiz?
+          </p>
+          <p v-else>
+            Haqiqatan ham "<strong>{{ itemToArchive?.title }}</strong
+            >" ma'lumotlarini arxivga o'tkazmoqchimisiz?
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="grey" variant="text" @click="dialogArchive = false"> Bekor qilish </v-btn>
+          <v-btn
+            :color="itemToArchive?.is_archived ? 'success' : 'warning'"
+            variant="flat"
+            @click="confirmArchive"
+            :loading="archiveLoading"
+          >
+            {{ itemToArchive?.is_archived ? 'Arxivdan chiqarish' : 'Arxivlash' }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-snackbar v-model="showSuccessSnackbar" color="success" :timeout="3000" top>
       {{ successMessage }}
       <template v-slot:actions>
@@ -215,11 +311,13 @@ const dialogAdd = ref(false)
 const dialogEdit = ref(false)
 const dialogDelete = ref(false)
 const dialogView = ref(false)
+const dialogArchive = ref(false)
 
 const loading = ref(false)
 const formLoading = ref(false)
 const editLoading = ref(false)
 const deleteLoading = ref(false)
+const archiveLoading = ref(false)
 
 const shouldResetForm = ref(false)
 const currentStep = ref(1)
@@ -239,21 +337,17 @@ const errorMessage = ref('')
 const stepperFormRef = ref(null)
 const editFormRef = ref(null)
 const itemToDelete = ref(null)
+const itemToArchive = ref(null)
+const archiveItemId = ref(null)
 const editingItem = ref(null)
 const viewingItem = ref(null)
 
-const headers = ref([
-  { title: '#', key: 'index', sortable: true },
-  { title: 'Sarlavha', key: 'title', sortable: true },
-  { title: 'Sana', key: 'date', sortable: false },
-  { title: 'Yaratilgan sana', key: 'recorded_date', sortable: true },
-  { title: 'Amallar', key: 'actions', sortable: false, align: 'center' },
-])
+const selectedStatus = ref(null)
+const statusItem = [
+  { label: 'Faol (Arxivdan chiqqan)', value: false },
+  { label: 'Arxivlangan', value: true },
+]
 const items = ref([])
-
-const rowClicked = (item) => {
-  console.log('✅ Clicked item:', item)
-}
 
 const formData = ref({
   year: new Date().getFullYear(),
@@ -319,11 +413,14 @@ const loadMeetingInfos = async () => {
   if (search.value?.trim()) {
     requestParams.query = search.value.trim()
   }
+  if (selectedStatus.value !== null) {
+    requestParams.is_archive = selectedStatus.value
+  }
 
   try {
     const response = await DirectorisActivity.getEventsAll(requestParams)
 
-    items.value = Array.isArray(response.data?.data) ? response.data.data : []
+    items.value = Array.isArray(response.data) ? response.data : []
     totalItems.value = response.data?.total || 0
   } catch (error) {
     console.error('API Error:', error)
@@ -338,9 +435,51 @@ const loadMeetingInfos = async () => {
 
 const clearFilters = () => {
   search.value = ''
+  selectedStatus.value = null
   selectedDate.value = null
   options.page = 1
   loadMeetingInfos()
+}
+
+const toggleArchive = (item) => {
+  itemToArchive.value = item
+  dialogArchive.value = true
+}
+
+const confirmArchive = async () => {
+  if (!itemToArchive.value) return
+
+  archiveLoading.value = true
+  archiveItemId.value = itemToArchive.value.id
+
+  try {
+    await DirectorisActivity.putAchiveEvent(
+      itemToArchive.value.id,
+      !itemToArchive.value.is_archived,
+    )
+
+    const itemIndex = items.value.findIndex((item) => item.id === itemToArchive.value.id)
+    if (itemIndex !== -1) {
+      items.value[itemIndex].is_archived = !items.value[itemIndex].is_archived
+    }
+
+    dialogArchive.value = false
+
+    const statusMessage = itemToArchive.value.is_archived
+      ? "Ma'lumot arxivdan chiqarildi"
+      : "Ma'lumot arxivlandi"
+
+    successMessage.value = statusMessage
+    showSuccessSnackbar.value = true
+    await loadMeetingInfos()
+    itemToArchive.value = null
+  } catch (error) {
+    errorMessage.value = "Arxiv holatini o'zgartirishda xatolik yuz berdi"
+    showErrorSnackbar.value = true
+  } finally {
+    archiveLoading.value = false
+    archiveItemId.value = null
+  }
 }
 
 const createMeetingInfo = async (basicData) => {
@@ -377,6 +516,7 @@ const uploadFile = async (meetingId, fileType, file) => {
     throw new Error(`${fileType} faylini yuklashda xatolik`)
   }
 }
+
 const updateMeetingInfo = async (id, updateData) => {
   try {
     const fileUploads = []
@@ -481,7 +621,7 @@ const editItem = async (item) => {
         ? topic.app_files.map((file) => ({
             id: file.id,
             path: file.path,
-            name: file.name || 'Nomsiz fayl', // Agar fayl nomi bo'lsa
+            name: file.name || 'Nomsiz fayl',
           }))
         : [],
     }))
@@ -649,6 +789,10 @@ watch(
     loadMeetingInfos()
   },
 )
+watch(selectedStatus, () => {
+  options.page = 1
+  loadMeetingInfos()
+})
 </script>
 
 <style scoped>

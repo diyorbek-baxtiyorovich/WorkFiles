@@ -21,7 +21,7 @@
                 label="Oy"
                 :items="months"
                 required
-                :rules="[rules.required]"
+                :rules="[rules.required, rules.month]"
                 @update:model-value="updateFormData"
               />
             </v-col>
@@ -32,7 +32,7 @@
                 label="Kun"
                 :items="days"
                 required
-                :rules="[rules.required]"
+                :rules="[rules.required, rules.day]"
                 @update:model-value="updateFormData"
               />
             </v-col>
@@ -351,17 +351,58 @@ const days = computed(() => {
   if (!localFormData.value.month || !localFormData.value.year) return []
 
   const daysInMonth = new Date(localFormData.value.year, localFormData.value.month, 0).getDate()
-  return Array.from({ length: daysInMonth }, (_, i) => ({
+  let availableDays = Array.from({ length: daysInMonth }, (_, i) => ({
     title: i + 1,
     value: i + 1,
   }))
+
+  // Agar bugungi yil va oy tanlangan bo'lsa, kechgan kunlarni chiqarib tashlash
+  if (
+    localFormData.value.year === currentYear.value &&
+    localFormData.value.month === currentMonth.value
+  ) {
+    availableDays = availableDays.filter((day) => day.value >= currentDay.value)
+  }
+  // Agar kechgan yil yoki oy tanlangan bo'lsa, barcha kunlarni chiqarib tashlash
+  else if (
+    localFormData.value.year < currentYear.value ||
+    (localFormData.value.year === currentYear.value &&
+      localFormData.value.month < currentMonth.value)
+  ) {
+    availableDays = []
+  }
+
+  return availableDays
 })
+const today = computed(() => new Date())
+const currentYear = computed(() => today.value.getFullYear())
+const currentMonth = computed(() => today.value.getMonth() + 1)
+const currentDay = computed(() => today.value.getDate())
 
 const rules = {
   required: (value) => !!value || 'Bu maydon majburiy',
   year: (value) => {
     const year = parseInt(value)
+    if (year < currentYear.value) return "O'tgan yilni tanlab bo'lmaydi"
     return (year >= 2000 && year <= 2100) || "Yil 2000-2100 oralig'ida bo'lishi kerak"
+  },
+  month: (value) => {
+    if (!value) return 'Oy tanlanishi kerak'
+    if (localFormData.value.year === currentYear.value && value < currentMonth.value) {
+      return "O'tgan oyni tanlab bo'lmaydi"
+    }
+    return true
+  },
+  day: (value) => {
+    if (!value) return 'Kun tanlanishi kerak'
+    if (
+      localFormData.value.year === currentYear.value &&
+      localFormData.value.month === currentMonth.value &&
+      value < currentDay.value
+    ) {
+      return "Kechgan kunni tanlab bo'lmaydi"
+    }
+    return true
   },
   pdfFile: (value) => {
     if (!value) return true

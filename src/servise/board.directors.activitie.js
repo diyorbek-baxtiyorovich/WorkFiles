@@ -2,8 +2,8 @@ import apiService from '@/libs/axios'
 
 const DirectorisActivity = {
   getEventsAll: async (params) => {
-    const response = await apiService.get('/events/get/all', { params })
-    return response
+    const { data } = await apiService.get('/events/get/all', { params })
+    return data
   },
 
   getEventDataId: async (id) => {
@@ -45,6 +45,10 @@ const DirectorisActivity = {
       data: param,
     })
     return response.data
+  },
+  putAchiveEvent: async (id, toArchive) => {
+    const { data } = await apiService.put(`/events/archive-event/${id}?to_archive=${toArchive}`)
+    return data
   },
 }
 

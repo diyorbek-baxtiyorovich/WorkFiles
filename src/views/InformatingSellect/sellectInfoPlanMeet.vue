@@ -1,0 +1,212 @@
+<template>
+  <v-app class="government-portal">
+    <v-app-bar color="blue darken-4" dark elevation="4">
+      <v-app-bar-title class="titel_header">
+        <v-icon left>mdi-bank</v-icon>
+        Mikrokreditbank
+      </v-app-bar-title>
+      <v-spacer></v-spacer>
+      <v-btn icon @click="drawer = !drawer">
+        <v-icon>mdi-menu</v-icon>
+      </v-btn>
+      <v-btn icon @click="modelValue = true">
+        <v-icon>mdi-logout</v-icon>
+      </v-btn>
+    </v-app-bar>
+
+    <v-navigation-drawer v-model="drawer" temporary location="right" width="300">
+      <v-list>
+        <v-list-item
+          prepend-icon="mdi-calendar-clock"
+          title="Reja arxiviga o'tish"
+          @click="arxivPlan"
+        ></v-list-item>
+        <v-list-item
+          prepend-icon="mdi-file-document-multiple"
+          title="Majlis materiallari arxivi"
+          @click="arxivMaterials"
+        ></v-list-item>
+      </v-list>
+    </v-navigation-drawer>
+
+    <v-main>
+      <v-container class="pa-6">
+        <div class="text-center mb-8">
+          <h1 class="text-h3 font-weight-bold text-blue-darken-4 mb-2">
+            Boshqaruv Kengashi Xizmatlar Markazi
+          </h1>
+        </div>
+
+        <v-row justify="center">
+          <v-col cols="12" md="5" class="mb-4">
+            <v-card class="selection-card" elevation="2" @click="proceedToSection('plan')">
+              <v-card-text class="text-center pa-6">
+                <v-icon size="48" color="blue darken-2" class="mb-4">mdi-calendar-clock</v-icon>
+                <h3 class="text-h5 mb-3">{{ planItem?.title || 'Rejaga o‘tish' }}</h3>
+              </v-card-text>
+            </v-card>
+          </v-col>
+
+          <v-col cols="12" md="5" class="mb-4">
+            <v-card class="selection-card" elevation="2" @click="proceedToSection('materials')">
+              <v-card-text class="text-center pa-6">
+                <v-icon size="48" color="green darken-2" class="mb-4"
+                  >mdi-file-document-multiple</v-icon
+                >
+                <h3 class="text-h5 mb-3">{{ BoardItem?.title || 'Rejaga o‘tish' }}</h3>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-main>
+    <v-dialog v-model="modelValue" max-width="400" persistent>
+      <v-card>
+        <v-card-title class="text-h6">Chiqish</v-card-title>
+
+        <v-card-text>Rostdan ham hisobdan chiqmoqchimisiz?</v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" color="grey" @click="cancel">Bekor qilish</v-btn>
+          <v-btn variant="tonal" color="red" @click="confirm">Chiqish</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="modalInfo" max-width="400" persistent>
+      <v-card>
+        <v-card-title class="text-h6">Ma'lumot</v-card-title>
+        <v-card-text>Fayl mavjud emas</v-card-text>
+        <v-card-actions>
+          <v-btn variant="text" color="grey" @click="modalInfo = false">Yopish</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-app>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import PlanBoardServise from '@/servise/board.plan.servise.js'
+import DirectorisActivity from '@/servise/board.directors.activitie.js'
+
+const drawer = ref(false)
+const router = useRouter()
+const planItem = ref(null)
+const BoardItem = ref(null)
+const modelValue = ref(false)
+const modalInfo = ref(false)
+
+const proceedToSection = (section) => {
+  if (section === 'plan') {
+    if (planItem.value && planItem.value.file) {
+      router.push({
+        name: 'planPdf',
+        query: { pdfUrl: encodeURIComponent(planItem.value.file) },
+      })
+    } else {
+      modalInfo.value = true
+    }
+  } else if (section === 'materials') {
+    if (BoardItem.value && BoardItem.value.id) {
+      router.push({
+        name: 'BoardMeeting',
+        params: { id: BoardItem.value.id },
+      })
+    } else {
+      modalInfo.value = true
+    }
+  }
+}
+
+const fetchPlanData = async () => {
+  const params = {
+    is_archive: false,
+  }
+  try {
+    const res = await PlanBoardServise.getPlansAll(params)
+    if (res.data && res.data.length > 0) {
+      planItem.value = res.data[0]
+    } else {
+      console.warn("Reja ma'lumotlari topilmadi.")
+    }
+  } catch (error) {
+    console.error("Plan ma'lumotlarini olishda xatolik:", error)
+  }
+}
+
+const fetchBoardData = async () => {
+  const params = {
+    is_archive: false,
+  }
+  try {
+    const res = await DirectorisActivity.getEventsAll(params)
+    if (res.data && res.data.length > 0) {
+      BoardItem.value = res.data[0]
+    } else {
+      console.warn('Materiallar topilmadi.')
+    }
+  } catch (error) {
+    console.error('Materiallarni olishda xatolik:', error)
+  }
+}
+
+const cancel = () => {
+  modelValue.value = false
+}
+
+const confirm = async () => {
+  modelValue.value = false
+  localStorage.removeItem('access')
+  localStorage.removeItem('user')
+  await router.push('/login')
+  location.reload()
+}
+const arxivPlan = () => {
+  router.push('/planArxiv')
+}
+const arxivMaterials = () => {
+  router.push('/meetingArxiv')
+}
+onMounted(() => {
+  fetchPlanData()
+  fetchBoardData()
+})
+</script>
+
+<style scoped>
+.government-portal {
+  min-height: 80vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e3f2fd 100%);
+}
+
+.selection-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.selection-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.selection-card.selected {
+  border-color: #1976d2;
+  background-color: #e3f2fd;
+}
+
+@media (max-width: 768px) {
+  .titel_header {
+    font-size: 14px;
+  }
+  .text-h3 {
+    font-size: 1.8rem !important;
+  }
+
+  .selection-card .v-card-text {
+    padding: 1rem !important;
+  }
+}
+</style>

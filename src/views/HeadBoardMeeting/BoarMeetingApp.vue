@@ -66,7 +66,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const goToBoardMeeting = () => {
-  router.push({ name: 'info-meeting' })
+  router.push({ name: 'meeting-Plan' })
 }
 
 const logout = async () => {

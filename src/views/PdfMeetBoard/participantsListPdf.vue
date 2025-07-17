@@ -3,8 +3,8 @@
     <div class="PrevExit">
       <v-tooltip text="Orqaga qaytish">
         <template #activator="{ props }">
-          <v-btn icon color="blue" v-bind="props" @click="exit">
-            <v-icon>mdi-arrow-left-bold</v-icon>
+          <v-btn icon color="white" v-bind="props" @click="exit">
+            <v-icon>mdi-arrow-left</v-icon>
           </v-btn>
         </template>
       </v-tooltip>
@@ -88,11 +88,11 @@ const renderPDF = async (url) => {
     const screenWidth = window.innerWidth
 
     if (screenWidth < 768) {
-      scale = 0.6
+      scale = 0.5
     } else if (screenWidth < 1024) {
       scale = 0.9
     } else {
-      scale = 1.25
+      scale = 1.6
     }
 
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
@@ -149,6 +149,8 @@ const initializePdfs = () => {
     const firstPdfUrl = route.query.firstPdfUrl || route.params.firstPdfUrl
     const secondPdfUrl = route.query.secondPdfUrl || route.params.secondPdfUrl
     const activeType = route.query.activeType || 'local'
+    const firstType = route.query.firstType || 'local'
+    const secondType = route.query.secondType || 'regional'
 
     if (firstPdfUrl || secondPdfUrl) {
       pdfSections.value = []
@@ -156,27 +158,37 @@ const initializePdfs = () => {
       const decodedFirstUrl = decodeURIComponent(firstPdfUrl || '')
       const decodedSecondUrl = decodeURIComponent(secondPdfUrl || '')
 
+      // Dinamik nomlar funksiyasi
+      const getTabName = (type) => {
+        switch (type) {
+          case 'local':
+            return "Tarkibiy bo'linmalar"
+          case 'regional':
+            return "Xududiy bo'linmalar rahbarlari"
+          default:
+            return "Ma'lumot"
+        }
+      }
+
       if (decodedFirstUrl) {
         pdfSections.value.push({
           id: 'first',
-          name: "Tarkibiy bo'linmalar",
-          type: 'first',
+          name: getTabName(firstType),
+          type: firstType,
           url: decodedFirstUrl,
         })
       }
       if (decodedSecondUrl) {
         pdfSections.value.push({
           id: 'second',
-          name: "Xududiy bo'linmalar",
-          type: 'second',
+          name: getTabName(secondType),
+          type: secondType,
           url: decodedSecondUrl,
         })
       }
 
       const targetSection =
-        activeType === 'regional' && pdfSections.value.length > 1
-          ? pdfSections.value[1]
-          : pdfSections.value[0]
+        pdfSections.value.find((section) => section.type === activeType) || pdfSections.value[0]
 
       loadPdf(targetSection)
     } else {
@@ -192,11 +204,29 @@ const initializePdfs = () => {
 
 const retryLoad = () => initializePdfs()
 
-const getTabClass = (type) => ({ first: 'first-tab', second: 'second-tab' })[type] || ''
-const getTabIcon = (type) =>
-  ({ first: 'mdi-file-document-outline', second: 'mdi-file-document' })[type] || 'mdi-file-document'
-const getTabIconColor = (type) => ({ first: 'primary', second: 'success' })[type] || 'primary'
+const getTabClass = (type) => {
+  const classes = {
+    local: 'local-tab',
+    regional: 'regional-tab',
+  }
+  return classes[type] || 'default-tab'
+}
 
+const getTabIcon = (type) => {
+  const icons = {
+    local: 'mdi-account-group',
+    regional: 'mdi-account-tie',
+  }
+  return icons[type] || 'mdi-file-document'
+}
+
+const getTabIconColor = (type) => {
+  const colors = {
+    local: 'primary',
+    regional: 'success',
+  }
+  return colors[type] || 'primary'
+}
 const exit = () => {
   const id = appStore.selectedId
   if (id) router.push({ name: 'BoardMeeting', params: { id } })
@@ -219,8 +249,8 @@ watch(() => [route.query.firstPdfUrl, route.query.secondPdfUrl], initializePdfs,
 
 .PrevExit {
   position: absolute;
-  left: 0;
-  top: 0;
+  left: 5px;
+  top: 5px;
   z-index: 10000;
 }
 
@@ -300,6 +330,20 @@ watch(() => [route.query.firstPdfUrl, route.query.secondPdfUrl], initializePdfs,
 .second-tab.v-tab--selected {
   background-color: rgba(76, 175, 80, 0.08);
   color: #4caf50;
+}
+.local-tab.v-tab--selected {
+  background-color: rgba(25, 118, 210, 0.08);
+  color: #1976d2;
+}
+
+.regional-tab.v-tab--selected {
+  background-color: rgba(76, 175, 80, 0.08);
+  color: #4caf50;
+}
+
+.default-tab.v-tab--selected {
+  background-color: rgba(158, 158, 158, 0.08);
+  color: #9e9e9e;
 }
 
 @media (max-width: 768px) {

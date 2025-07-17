@@ -21,7 +21,13 @@ const props = defineProps({
 })
 
 const menuItems = [
-  { icon: 'mdi-home-group-plus', title: "Ma'lumotlar qo'shish", value: 'Home', to: '/create' },
+  {
+    icon: 'mdi-content-save-plus',
+    title: "Majlis materiallarini qo'shish",
+    value: 'Home',
+    to: '/create',
+  },
+  { icon: 'mdi-file-document-plus', title: "Reja qo'shish", value: 'AddTable', to: '/Table' },
 ]
 </script>
 

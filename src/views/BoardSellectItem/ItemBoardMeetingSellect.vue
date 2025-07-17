@@ -9,11 +9,12 @@
         </template>
       </v-tooltip>
     </div>
+
     <div class="PrevExit">
       <v-tooltip text="Orqaga qaytish">
         <template #activator="{ props }">
-          <v-btn icon color="blue" v-bind="props" @click="exit">
-            <v-icon>mdi-arrow-left-bold</v-icon>
+          <v-btn icon color="white" v-bind="props" @click="exit">
+            <v-icon>mdi-arrow-left</v-icon>
           </v-btn>
         </template>
       </v-tooltip>
@@ -156,7 +157,6 @@
                     </v-card>
                   </v-col>
 
-                  <!-- Qaror loyihasi -->
                   <v-col v-if="topic.agenda_files?.resolution" cols="12" sm="6" md="4">
                     <v-card
                       class="file-card resolution-card"
@@ -173,7 +173,6 @@
                     </v-card>
                   </v-col>
 
-                  <!-- Taqdimot -->
                   <v-col v-if="topic.agenda_files?.presentation" cols="12" sm="6" md="4">
                     <v-card
                       class="file-card presentation-card"
@@ -294,6 +293,9 @@ const navigateToParticipants = (type) => {
       query: {
         firstPdfUrl: encodeURIComponent(localUrl),
         secondPdfUrl: encodeURIComponent(regionalUrl),
+        activeType: 'local',
+        firstType: 'local',
+        secondType: 'regional',
       },
     })
   } else {
@@ -302,6 +304,9 @@ const navigateToParticipants = (type) => {
       query: {
         firstPdfUrl: encodeURIComponent(regionalUrl),
         secondPdfUrl: encodeURIComponent(localUrl),
+        activeType: 'regional',
+        firstType: 'regional',
+        secondType: 'local',
       },
     })
   }
@@ -454,7 +459,7 @@ const logout = async () => {
 }
 
 const exit = async () => {
-  router.push('/info-meeting')
+  router.push('/meeting-Plan')
 }
 </script>
 

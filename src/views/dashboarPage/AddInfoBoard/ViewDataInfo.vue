@@ -8,7 +8,6 @@
     persistent
   >
     <v-card>
-      <!-- Header -->
       <v-card-title class="bg-primary text-white pa-4">
         <div class="d-flex align-center justify-space-between w-100">
           <span class="text-h6">Majlis Ma'lumotlari</span>
@@ -16,10 +15,8 @@
         </div>
       </v-card-title>
 
-      <!-- Content -->
       <v-card-text class="pa-4">
         <v-list>
-          <!-- Asosiy ma'lumotlar -->
           <v-list-subheader class="text-primary font-weight-bold">
             ASOSIY MA'LUMOTLAR
           </v-list-subheader>
@@ -97,7 +94,6 @@
             </template>
           </v-list-item>
 
-          <!-- Mavzular va ularning fayllar -->
           <template v-if="meetingData?.event_topics?.length">
             <v-divider class="my-3"></v-divider>
             <v-list-subheader class="text-primary font-weight-bold">
@@ -177,7 +173,6 @@
             </template>
           </template>
 
-          <!-- Statistika -->
           <v-divider class="my-3"></v-divider>
           <v-list-subheader class="text-primary font-weight-bold"> STATISTIKA </v-list-subheader>
 
@@ -195,7 +190,6 @@
         </v-list>
       </v-card-text>
 
-      <!-- Footer -->
       <v-card-actions class="pa-4">
         <v-spacer></v-spacer>
         <v-btn color="primary" variant="elevated" @click="closeModal"> Yopish </v-btn>

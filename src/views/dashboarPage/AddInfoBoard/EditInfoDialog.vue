@@ -37,6 +37,8 @@
                   density="comfortable"
                   :rules="[rules.required, rules.year]"
                   :readonly="loading"
+                  :min="today.year"
+                  :max="2100"
                   @input="markAsModified"
                 />
               </v-col>
@@ -45,11 +47,12 @@
                 <v-select
                   v-model="editData.month"
                   label="Oy"
-                  :items="months"
+                  :items="availableMonths"
                   variant="outlined"
                   density="comfortable"
-                  :rules="[rules.required]"
+                  :rules="[rules.required, rules.month]"
                   :readonly="loading"
+                  :disabled="!editData.year"
                   @update:model-value="markAsModified"
                 />
               </v-col>
@@ -61,8 +64,9 @@
                   :items="days"
                   variant="outlined"
                   density="comfortable"
-                  :rules="[rules.required]"
+                  :rules="[rules.required, rules.day]"
                   :readonly="loading"
+                  :disabled="!editData.month"
                   @update:model-value="markAsModified"
                 />
               </v-col>
@@ -713,17 +717,51 @@ const months = [
   { title: 'Noyabr', value: 11 },
   { title: 'Dekabr', value: 12 },
 ]
+const availableMonths = computed(() => {
+  const selectedYear = parseInt(editData.value.year)
+  const currentYear = today.value.year
+  const currentMonth = today.value.month
+
+  if (selectedYear > currentYear) {
+    return months // Kelajakdagi yil uchun barcha oylar
+  } else if (selectedYear === currentYear) {
+    return months.filter((month) => month.value >= currentMonth) // Joriy yil uchun faqat joriy va kelajakdagi oylar
+  } else {
+    return [] // O'tgan yil uchun hech qanday oy yo'q
+  }
+})
 
 const days = computed(() => {
   if (!editData.value.month || !editData.value.year) return []
 
-  const daysInMonth = new Date(editData.value.year, editData.value.month, 0).getDate()
-  return Array.from({ length: daysInMonth }, (_, i) => ({
-    title: i + 1,
-    value: i + 1,
-  }))
-})
+  const selectedYear = parseInt(editData.value.year)
+  const selectedMonth = parseInt(editData.value.month)
+  const currentYear = today.value.year
+  const currentMonth = today.value.month
+  const currentDay = today.value.day
 
+  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate()
+  let startDay = 1
+
+  if (selectedYear === currentYear && selectedMonth === currentMonth) {
+    startDay = currentDay
+  }
+
+  const dayArray = []
+  for (let i = startDay; i <= daysInMonth; i++) {
+    dayArray.push({ title: i, value: i })
+  }
+
+  return dayArray
+})
+const today = computed(() => {
+  const now = new Date()
+  return {
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+    day: now.getDate(),
+  }
+})
 const getFileName = (url) => {
   if (!url) return ''
   return decodeURIComponent(url.split('/').pop())
@@ -918,7 +956,44 @@ const rules = {
   required: (value) => !!value || 'Yangi faylni yuklash majburiy!\n' + '\n',
   year: (value) => {
     const year = parseInt(value)
-    return (year >= 2000 && year <= 2100) || "Yil 2000-2100 oralig'ida bo'lishi kerak"
+    const currentYear = today.value.year
+    if (year < currentYear) return `Yil ${currentYear} dan kichik bo'lishi mumkin emas`
+    if (year > 2100) return "Yil 2100 dan katta bo'lishi mumkin emas"
+    return true
+  },
+  month: (value) => {
+    if (!value) return 'Oyni tanlang'
+    const selectedYear = parseInt(editData.value.year)
+    const currentYear = today.value.year
+    const currentMonth = today.value.month
+
+    if (selectedYear === currentYear && value < currentMonth) {
+      return `O'tgan oylarni tanlash mumkin emas`
+    }
+    return true
+  },
+  day: (value) => {
+    if (!value) return 'Kunni tanlang'
+    const selectedYear = parseInt(editData.value.year)
+    const selectedMonth = parseInt(editData.value.month)
+    const selectedDay = parseInt(value)
+
+    const currentYear = today.value.year
+    const currentMonth = today.value.month
+    const currentDay = today.value.day
+
+    if (selectedYear < currentYear) return `O'tgan yil kunlarini tanlash mumkin emas`
+    if (selectedYear === currentYear && selectedMonth < currentMonth)
+      return `O'tgan oy kunlarini tanlash mumkin emas`
+    if (
+      selectedYear === currentYear &&
+      selectedMonth === currentMonth &&
+      selectedDay < currentDay
+    ) {
+      return `O'tgan kunlarni tanlash mumkin emas`
+    }
+
+    return true
   },
   pdfFile: (value) => {
     if (!value) return true
@@ -1196,6 +1271,27 @@ const loadData = () => {
 
 watch(() => props.data, loadData, { immediate: true })
 
+watch(
+  () => editData.value.year,
+  (newYear) => {
+    if (newYear) {
+      if (!availableMonths.value.some((m) => m.value === editData.value.month)) {
+        editData.value.month = null
+        editData.value.day = null
+      }
+    }
+  },
+)
+watch(
+  () => editData.value.month,
+  (newMonth) => {
+    if (newMonth) {
+      if (!days.value.some((d) => d.value === editData.value.day)) {
+        editData.value.day = null
+      }
+    }
+  },
+)
 onMounted(() => {
   loadData()
 })

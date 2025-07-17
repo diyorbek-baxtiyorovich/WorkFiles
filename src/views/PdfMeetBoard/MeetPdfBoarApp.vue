@@ -3,8 +3,8 @@
     <div class="PrevExit">
       <v-tooltip text="Orqaga qaytish">
         <template #activator="{ props }">
-          <v-btn icon color="blue" v-bind="props" @click="exit">
-            <v-icon>mdi-arrow-left-bold</v-icon>
+          <v-btn icon color="white" v-bind="props" @click="exit">
+            <v-icon>mdi-arrow-left</v-icon>
           </v-btn>
         </template>
       </v-tooltip>
@@ -86,9 +86,9 @@ const renderPDF = async (url) => {
     const ratio = window.devicePixelRatio || 1
     const screenWidth = window.innerWidth
 
-    let scale = 1.25
+    let scale = 1.5
     if (screenWidth < 768) {
-      scale = 0.6
+      scale = 0.5
     }
 
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
@@ -241,8 +241,8 @@ watch(
 }
 .PrevExit {
   position: absolute;
-  left: 0;
-  top: 0;
+  left: 5px;
+  top: 5px;
   z-index: 10000;
 }
 

@@ -14,9 +14,21 @@ const routes = [
     meta: { requiresAuth: true, layout: 'default' },
   },
   {
-    path: '/info-meeting',
-    name: 'info-meeting',
-    component: () => import('@/views/InformatingSellect/MeetingSellectInfo.vue'),
+    path: '/meeting-Plan',
+    name: 'meeting-Plan',
+    component: () => import('@/views/InformatingSellect/sellectInfoPlanMeet.vue'),
+    meta: { requiresAuth: true, layout: 'default' },
+  },
+  {
+    path: '/meetingArxiv',
+    name: 'meeting-arxiv',
+    component: () => import('@/views/arxivDataPlanMeet/arxivMeetData.vue'),
+    meta: { requiresAuth: true, layout: 'default' },
+  },
+  {
+    path: '/planArxiv',
+    name: 'plan-arxiv',
+    component: () => import('@/views/arxivDataPlanMeet/arxivPlanData.vue'),
     meta: { requiresAuth: true, layout: 'default' },
   },
   {
@@ -29,6 +41,12 @@ const routes = [
     path: '/agenda',
     name: 'agenda',
     component: () => import('@/views/PdfMeetBoard/AgendPdfView.vue'),
+    meta: { requiresAuth: true, layout: 'default' },
+  },
+  {
+    path: '/planPdf',
+    name: 'planPdf',
+    component: () => import('@/views/PdfMeetBoard/PlanPdfView.vue'),
     meta: { requiresAuth: true, layout: 'default' },
   },
   {
@@ -54,6 +72,12 @@ const routes = [
     path: '/create',
     name: 'create',
     component: () => import('@/views/dashboarPage/AppNewCreateData.vue'),
+    meta: { requiresAuth: true, layout: 'admin' },
+  },
+  {
+    path: '/Table',
+    name: 'Table',
+    component: () => import('@/views/dashboarPage/BlokViewAddDash/AddNewBroad.vue'),
     meta: { requiresAuth: true, layout: 'admin' },
   },
   {

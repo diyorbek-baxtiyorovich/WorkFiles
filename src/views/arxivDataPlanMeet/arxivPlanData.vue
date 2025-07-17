@@ -1,5 +1,5 @@
 <template>
-  <div class="info-section">
+  <div class="info-section" :class="informatingSellect.length > 4 ? 'auto-height' : 'full-height'">
     <div class="logout">
       <v-tooltip text="Chiqish">
         <template #activator="{ props }">
@@ -9,14 +9,16 @@
         </template>
       </v-tooltip>
     </div>
+    <v-btn icon class="back-btn" @click="goBack">
+      <v-icon>mdi-arrow-left</v-icon>
+    </v-btn>
     <v-container>
       <v-row justify="center">
         <v-col cols="12" md="8" class="text-center">
-          <h2 class="section-title mb-4">Boshqaruv Kengashi Faoliyati</h2>
+          <h2 class="section-title mb-4">Boshqaruv Kengashi Uchrashuv Arxivi</h2>
         </v-col>
       </v-row>
       <v-row justify="center" class="mb-2" dense>
-        <!-- Qidiruv maydoni -->
         <v-col cols="12" md="4">
           <v-text-field
             v-model="search"
@@ -28,38 +30,6 @@
             class="search-input"
             hide-details
           />
-        </v-col>
-
-        <v-col cols="12" md="2">
-          <v-menu v-model="startMenu" :close-on-content-click="false" offset-y>
-            <template #activator="{ props }">
-              <v-text-field
-                v-model="formattedDate"
-                v-bind="props"
-                label="Sana"
-                prepend-inner-icon="mdi-calendar"
-                variant="outlined"
-                density="comfortable"
-                readonly
-              />
-            </template>
-
-            <v-date-picker
-              v-model="selectedDate"
-              @update:model-value="
-                () => {
-                  startMenu = false
-                  getEventData()
-                }
-              "
-              locale="en-US"
-            />
-          </v-menu>
-        </v-col>
-        <v-col cols="12" md="2">
-          <v-btn color="blue" variant="text" class="ml-auto clearIcons" @click="clearFilters">
-            <v-icon start size="30">mdi-filter-remove</v-icon>
-          </v-btn>
         </v-col>
       </v-row>
 
@@ -77,11 +47,7 @@
             <v-card-text class="text-center pa-2">
               <div class="feature-content">
                 <h3 class="feature-title">
-                  "Mikrokreditbank" ATB Boshqaruvining
-                  <span class="highlight">{{ item.year }}</span> yil
-                  <span class="highlight">{{ item.day }}</span> -
-                  <span class="highlight">{{ item.month }}</span
-                  >dagi navbatdagi majlisiga doir materiallar to'plami
+                  {{ item.title }}
                 </h3>
               </div>
             </v-card-text>
@@ -112,10 +78,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { debounce } from 'lodash'
-import DirectorisActivity from '@/servise/board.directors.activitie.js'
+import PlanBoardServise from '@/servise/board.plan.servise.js'
 
 const search = ref('')
 const currentPage = ref(1)
@@ -124,14 +90,6 @@ const totalPages = ref(0)
 const informatingSellect = ref([])
 const loading = ref(false)
 const router = useRouter()
-const startMenu = ref(false)
-const selectedDate = ref(null)
-
-import { format } from 'date-fns'
-
-const formattedDate = computed(() =>
-  selectedDate.value ? format(new Date(selectedDate.value), 'yyyy-MM-dd') : null,
-)
 
 const getEventData = async () => {
   loading.value = true
@@ -140,18 +98,14 @@ const getEventData = async () => {
       query: search.value,
       page: currentPage.value,
       page_size: itemsPerPage,
+      is_archive: true,
     }
 
-    if (selectedDate.value) {
-      const formattedDate = format(new Date(selectedDate.value), 'yyyy-MM-dd')
-      params.date = formattedDate
-    }
-
-    const res = await DirectorisActivity.getEventsAll(params)
+    const res = await PlanBoardServise.getPlansAll(params)
 
     if (res && res.data) {
-      informatingSellect.value = res.data.data || []
-      totalPages.value = res.data.total_pages || 0
+      informatingSellect.value = res.data || []
+      totalPages.value = res.total_pages || 0
 
       if (currentPage.value > totalPages.value && totalPages.value > 0) {
         currentPage.value = 1
@@ -170,12 +124,6 @@ const getEventData = async () => {
   }
 }
 
-const clearFilters = () => {
-  search.value = ''
-  selectedDate.value = null
-  getEventData()
-}
-
 const debouncedSearch = debounce(() => {
   currentPage.value = 1
   getEventData()
@@ -191,9 +139,10 @@ watch(currentPage, () => {
 })
 
 const handleCardClick = (item) => {
+  console.log(item)
   router.push({
-    name: 'BoardMeeting',
-    params: { id: item.id },
+    name: 'planPdf',
+    query: { pdfUrl: encodeURIComponent(item.file) },
   })
 }
 const logout = async () => {
@@ -201,8 +150,8 @@ const logout = async () => {
   localStorage.removeItem('user')
   await router.push('/login')
   location.reload()
-  console.log('here')
 }
+const goBack = () => router.go(-1)
 </script>
 
 <style scoped>
@@ -210,8 +159,15 @@ const logout = async () => {
   position: relative;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   padding: 20px 0;
-  height: auto;
+  height: 100vh;
 }
+.back-btn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+}
+
 .logout {
   position: absolute;
   right: 15px;
@@ -273,6 +229,20 @@ const logout = async () => {
 }
 
 @media (max-width: 960px) {
+  .info-section {
+    position: relative;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    padding: 20px 0;
+    transition: height 0.3s ease;
+  }
+
+  .full-height {
+    height: 100vh;
+  }
+
+  .auto-height {
+    height: auto;
+  }
   .section-title {
     font-size: 2rem;
   }
