@@ -147,7 +147,7 @@ const initializePdfs = () => {
 
   try {
     const firstPdfUrl = route.query.firstPdfUrl || route.params.firstPdfUrl
-    const secondPdfUrl = route.query.secondPdfUrl || route.params.secondPdfUrl
+    const secondPdfUrl = route.query.secondPdfUrl || <route class="params secondPdfUrl"></route>
     const activeType = route.query.activeType || 'local'
     const firstType = route.query.firstType || 'local'
     const secondType = route.query.secondType || 'regional'
@@ -158,7 +158,6 @@ const initializePdfs = () => {
       const decodedFirstUrl = decodeURIComponent(firstPdfUrl || '')
       const decodedSecondUrl = decodeURIComponent(secondPdfUrl || '')
 
-      // Dinamik nomlar funksiyasi
       const getTabName = (type) => {
         switch (type) {
           case 'local':

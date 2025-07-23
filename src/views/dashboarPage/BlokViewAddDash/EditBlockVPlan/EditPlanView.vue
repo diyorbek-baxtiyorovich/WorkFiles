@@ -60,7 +60,6 @@
                   </div>
                 </v-alert>
 
-                <!-- Fayl tanlash input doim ko‘rinadi -->
                 <v-file-input
                   v-if="currentFileOpen"
                   v-model="formData.file"
