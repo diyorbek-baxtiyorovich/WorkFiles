@@ -12,7 +12,7 @@
 
     <div v-if="loading" class="loading-container">
       <v-progress-circular indeterminate color="primary" size="64" />
-      <p class="mt-4">PDF yuklanmoqda...</p>
+      <p class="mt-4">PDF yuklanmoqda..</p>
     </div>
 
     <div v-else-if="error" class="error-container">
