@@ -1,9 +1,9 @@
 <template>
   <div class="hero-section">
     <div class="logout">
-      <v-tooltip text="Chiqish">
+      <v-tooltip text="Чиқиш">
         <template #activator="{ props }">
-          <v-btn icon color="red" v-bind="props" @click="logout">
+          <v-btn icon color="red" v-bind="props" @click="modelValue = true">
             <v-icon>mdi-logout</v-icon>
           </v-btn>
         </template>
@@ -28,14 +28,12 @@
             <img :src="MKBlogo" alt="Logo" style="width: auto; height: 30px" />
           </v-chip>
 
-          <h1 class="main-title mb-2 mb-md-4">Boshqaruv Kengashi</h1>
-
-          <p class="subtitle mb-3 mb-md-4">Mikrokreditbank Boshqaruv Kengashi</p>
+          <h1 class="main-title mb-2 mb-md-4">Банк Бошқаруви мажлиси материаллари тўплами</h1>
 
           <p class="description mb-6 mb-md-8">
-            Moliyaviy barqarorlik va innovatsion yechimlar orqali mamlakatimiz iqtisodiyotining
-            rivojlanishiga hissa qo'shuvchi, zamonaviy bank xizmatlarini taqdim etuvchi yetakchi
-            moliyaviy muassasa sifatida faoliyat yuritamiz.
+            Молиявий барқарорлик ва инновацион ечимлар орқали мамлакатимиз иқтисодиётининг
+            ривожланишига ҳисса қўшувчи, замонавий банк хизматларини тақдим этувчи етакчи молиявий
+            муассаса сифатида фаолият юритамиз.
           </p>
 
           <v-btn
@@ -46,15 +44,22 @@
             :class="{ 'mobile-button': $vuetify.display.mobile }"
           >
             <span class="button-text">
-              {{
-                $vuetify.display.mobile
-                  ? "Yig'ilishga o'tish"
-                  : "Boshqaruv Kengashi yig'ilishiga o'tish"
-              }}
+              {{ $vuetify.display.mobile ? 'Йиғилишга ўтиш' : 'Бошқарув  йиғилишига ўтиш' }}
             </span>
           </v-btn>
         </v-col>
       </v-row>
+      <v-dialog v-model="modelValue" max-width="400" persistent>
+        <v-card>
+          <v-card-title class="text-h6">Chiqish</v-card-title>
+          <v-card-text>Ростдан ҳам ҳисобдан чиқмоқчимисиз?</v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn variant="text" color="grey" @click="cancel">Бекор қилиш</v-btn>
+            <v-btn variant="tonal" color="red" @click="confirm">Чиқиш</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </v-container>
   </div>
 </template>
@@ -62,19 +67,23 @@
 <script setup>
 import MKBlogo from '@/assets/images/MKBANK.png'
 import { useRouter } from 'vue-router'
+import { ref } from 'vue'
 
+const modelValue = ref(false)
 const router = useRouter()
 
 const goToBoardMeeting = () => {
   router.push({ name: 'meeting-Plan' })
 }
-
-const logout = async () => {
+const cancel = () => {
+  modelValue.value = false
+}
+const confirm = async () => {
+  modelValue.value = false
   localStorage.removeItem('access')
   localStorage.removeItem('user')
   await router.push('/login')
   location.reload()
-  console.log('here')
 }
 </script>
 
@@ -206,6 +215,8 @@ const logout = async () => {
 }
 
 .main-title {
+  width: 80%;
+  margin: 0 auto;
   font-size: clamp(2rem, 8vw, 4rem);
   font-weight: 700;
   color: white;
@@ -324,12 +335,13 @@ const logout = async () => {
   }
 
   .main-title {
-    font-size: 2rem;
+    width: 100%;
+    font-size: 1.9rem;
     line-height: 1.1;
   }
 
   .subtitle {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
   .description {

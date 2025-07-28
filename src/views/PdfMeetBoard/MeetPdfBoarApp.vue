@@ -61,6 +61,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/routerId.js'
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf'
 import pdfWorker from 'pdfjs-dist/legacy/build/pdf.worker?url'
+import panzoom from 'panzoom'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 
@@ -88,7 +89,7 @@ const renderPDF = async (url) => {
 
     let scale = 1.5
     if (screenWidth < 768) {
-      scale = 0.5
+      scale = 0.46
     }
 
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
@@ -109,6 +110,16 @@ const renderPDF = async (url) => {
       await page.render({ canvasContext: context, viewport }).promise
       pdfWrapper.value.appendChild(canvas)
     }
+
+    nextTick(() => {
+      panzoom(pdfWrapper.value, {
+        maxZoom: 3,
+        minZoom: 0.5,
+        bounds: true,
+        boundsPadding: 0.1,
+        zoomDoubleClickSpeed: 1,
+      })
+    })
   } catch (err) {
     error.value = `PDF yuklashda xatolik: ${err.message}`
     currentFileUrl.value = null
@@ -245,7 +256,29 @@ watch(
   top: 5px;
   z-index: 10000;
 }
+.PrevExit {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 10000;
+  pointer-events: auto !important;
+  background: white !important;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
 
+.PrevExit:hover {
+  background: #f5f5f5 !important;
+}
+
+.PrevExit:active {
+  transform: scale(0.95);
+  background: #e0e0e0 !important;
+}
 .file-container {
   flex: 1;
   width: 100%;
@@ -321,6 +354,8 @@ watch(
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow: auto;
+  touch-action: none;
 }
 .tab-text {
   font-size: 14px;

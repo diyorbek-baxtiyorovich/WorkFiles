@@ -25,8 +25,8 @@ const PlanBoardServise = {
     return data
   },
 
-  putUpdatePlan: async (id, params) => {
-    const { data } = await apiService.put(`/event_plans/update-plan/${id}`, params, {
+  putUpdatePlan: async (id, formData) => {
+    const { data } = await apiService.put(`/event_plans/update-plan/${id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return data

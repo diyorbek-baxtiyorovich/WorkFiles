@@ -2,7 +2,6 @@
   <v-container fluid>
     <v-card class="mb-2 px-4 pa-6">
       <v-row class="align-center justify-space-between" no-gutters>
-        <!-- Chap tomon: Search + Status -->
         <v-col cols="12" md="8">
           <v-row dense>
             <v-col cols="12" sm="6" md="6">
@@ -74,7 +73,6 @@
               </v-chip>
             </td>
             <td>
-              <!-- Tahrirlash tugmasi -->
               <v-tooltip text="Tahrirlash">
                 <template #activator="{ props }">
                   <v-btn
@@ -168,10 +166,6 @@
       />
     </v-dialog>
 
-    <!-- View Dialog -->
-    <!--    <ViewPlanApp v-model="dialogView" :meeting-data="viewingItem" />-->
-
-    <!-- Delete Dialog -->
     <v-dialog v-model="dialogDelete" max-width="400px">
       <v-card>
         <v-card-title class="text-h5">
@@ -443,8 +437,8 @@ const handleEditSubmit = async (data) => {
     formData.append('id', data.id)
     formData.append('title', data.title)
 
-    if (data.file && data.file.length > 0) {
-      formData.append('file', data.file[0])
+    if (data.file instanceof File) {
+      formData.append('file', data.file)
     }
 
     await PlanBoardServise.putUpdatePlan(data.id, formData)

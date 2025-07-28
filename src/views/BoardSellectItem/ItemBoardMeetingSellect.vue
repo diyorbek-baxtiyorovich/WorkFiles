@@ -1,9 +1,9 @@
 <template>
   <div class="features-section">
     <div class="logout">
-      <v-tooltip text="Chiqish">
+      <v-tooltip text="Чиқиш">
         <template #activator="{ props }">
-          <v-btn icon color="red" v-bind="props" @click="logout">
+          <v-btn icon color="red" v-bind="props" @click="modelValue = true">
             <v-icon>mdi-logout</v-icon>
           </v-btn>
         </template>
@@ -11,7 +11,7 @@
     </div>
 
     <div class="PrevExit">
-      <v-tooltip text="Orqaga qaytish">
+      <v-tooltip text="Орқага қайтиш">
         <template #activator="{ props }">
           <v-btn icon color="white" v-bind="props" @click="exit">
             <v-icon>mdi-arrow-left</v-icon>
@@ -22,9 +22,9 @@
     <v-container>
       <v-row justify="center" class="mb-5">
         <v-col cols="12" md="8" class="text-center">
-          <h2 class="section-title mb-4">Boshqaruv Kengashi Faoliyati</h2>
+          <h2 class="section-title mb-4">Бошқарув мажлиси материаллари тўплами</h2>
           <p class="section-subtitle">
-            Zamonaviy korporativ boshqaruv tamoyillari asosida samarali va shaffof faoliyat
+            Замонавий корпоратив бошқарув тамойиллари асосида самарали ва шаффоф фаолият
           </p>
         </v-col>
       </v-row>
@@ -49,7 +49,7 @@
                     mdi-calendar-text-outline
                   </v-icon>
                 </div>
-                <h3 class="feature-title">Kun tartibi</h3>
+                <h3 class="feature-title">Кун тартиби</h3>
               </div>
             </v-card-text>
           </v-card>
@@ -71,8 +71,8 @@
                     <v-icon color="success" size="40"> mdi-account-multiple </v-icon>
                   </div>
                   <div class="panel-info">
-                    <h3 class="panel-title-text">Ishtirokchilar ro'yxati</h3>
-                    <p class="panel-subtitle">Yig'ilish ishtirokchilari</p>
+                    <h3 class="panel-title-text">Иштирокчилар рўйхати</h3>
+                    <p class="panel-subtitle">Йиғилиш иштирокчилари</p>
                   </div>
                 </div>
               </v-expansion-panel-title>
@@ -90,8 +90,8 @@
                           <v-icon color="primary" size="32" class="mb-2">
                             mdi-account-group
                           </v-icon>
-                          <h4 class="participant-title">Tarkibiy</h4>
-                          <p class="participant-desc">Asosiy ishtirokchilar</p>
+                          <h4 class="participant-title">Таркибий</h4>
+                          <p class="participant-desc">Асосий иштирокчилар</p>
                         </div>
                       </v-card-text>
                     </v-card>
@@ -108,8 +108,8 @@
                           <v-icon color="secondary" size="32" class="mb-2">
                             mdi-account-tie
                           </v-icon>
-                          <h4 class="participant-title">Xududiy bo'limlar rahbarlari</h4>
-                          <p class="participant-desc">Viloyat rahbarlari</p>
+                          <h4 class="participant-title">Худудий бўлимлар раҳбарлари</h4>
+                          <p class="participant-desc">Вилоят раҳбарлари</p>
                         </div>
                       </v-card-text>
                     </v-card>
@@ -118,104 +118,106 @@
               </v-expansion-panel-text>
             </v-expansion-panel>
 
-            <!-- Event Topics panels -->
-            <v-expansion-panel
-              v-for="(topic, index) in eventTopics"
-              :key="topic.id"
-              class="expansion-panel"
-              elevation="0"
-            >
-              <v-expansion-panel-title class="panel-title">
-                <div class="panel-header">
-                  <div class="panel-icon-wrapper agenda-files-icon">
-                    <v-icon color="info" size="40"> mdi-folder-multiple-outline </v-icon>
+            <div class="mt-7">
+              <v-expansion-panel
+                v-for="(topic, index) in eventTopics"
+                :key="topic.id"
+                class="expansion-panel"
+                elevation="0"
+              >
+                <v-expansion-panel-title class="panel-title">
+                  <div class="panel-header">
+                    <div class="panel-icon-wrapper agenda-files-icon">
+                      <v-icon color="info" size="40"> mdi-folder-multiple-outline </v-icon>
+                    </div>
+                    <div class="panel-info">
+                      <h3 class="panel-title-text">
+                        {{ topic.agenda_files?.title || topic.title }}
+                      </h3>
+                    </div>
                   </div>
-                  <div class="panel-info">
-                    <h3 class="panel-title-text">{{ topic.agenda_files?.title || topic.title }}</h3>
-                  </div>
-                </div>
-              </v-expansion-panel-title>
+                </v-expansion-panel-title>
 
-              <v-expansion-panel-text>
-                <v-row class="panel-content">
-                  <!-- Ma'lumotnoma -->
-                  <v-col v-if="topic.agenda_files?.reference" cols="12" sm="6" md="4">
-                    <v-card
-                      class="file-card reference-card"
-                      elevation="2"
-                      @click="navigateToReference(topic.agenda_files)"
-                    >
-                      <v-card-text class="pa-4">
-                        <div class="file-item">
-                          <v-icon color="orange" size="32" class="mb-2">
-                            mdi-file-document-outline
-                          </v-icon>
-                          <h4 class="file-title">Ma'lumotnoma</h4>
-                          <p class="file-desc">Asosiy ma'lumotlar</p>
-                        </div>
-                      </v-card-text>
-                    </v-card>
-                  </v-col>
+                <v-expansion-panel-text>
+                  <v-row class="panel-content">
+                    <v-col v-if="topic.agenda_files?.reference" cols="12" sm="6" md="4">
+                      <v-card
+                        class="file-card reference-card"
+                        elevation="2"
+                        @click="navigateToReference(topic.agenda_files)"
+                      >
+                        <v-card-text class="pa-4">
+                          <div class="file-item">
+                            <v-icon color="orange" size="32" class="mb-2">
+                              mdi-file-document-outline
+                            </v-icon>
+                            <h4 class="file-title">Маълумотнома</h4>
+                            <p class="file-desc">Асосий маълумотлар</p>
+                          </div>
+                        </v-card-text>
+                      </v-card>
+                    </v-col>
 
-                  <v-col v-if="topic.agenda_files?.resolution" cols="12" sm="6" md="4">
-                    <v-card
-                      class="file-card resolution-card"
-                      elevation="2"
-                      @click="navigateToResolution(topic.agenda_files)"
-                    >
-                      <v-card-text class="pa-4">
-                        <div class="file-item">
-                          <v-icon color="purple" size="32" class="mb-2"> mdi-gavel </v-icon>
-                          <h4 class="file-title">Qaror loyihasi</h4>
-                          <p class="file-desc">Qaror hujjati</p>
-                        </div>
-                      </v-card-text>
-                    </v-card>
-                  </v-col>
+                    <v-col v-if="topic.agenda_files?.resolution" cols="12" sm="6" md="4">
+                      <v-card
+                        class="file-card resolution-card"
+                        elevation="2"
+                        @click="navigateToResolution(topic.agenda_files)"
+                      >
+                        <v-card-text class="pa-4">
+                          <div class="file-item">
+                            <v-icon color="purple" size="32" class="mb-2"> mdi-gavel </v-icon>
+                            <h4 class="file-title">Қарор лойиҳаси</h4>
+                            <p class="file-desc">Қарор xужжати</p>
+                          </div>
+                        </v-card-text>
+                      </v-card>
+                    </v-col>
 
-                  <v-col v-if="topic.agenda_files?.presentation" cols="12" sm="6" md="4">
-                    <v-card
-                      class="file-card presentation-card"
-                      elevation="2"
-                      @click="navigateToPresentation(topic.agenda_files)"
-                    >
-                      <v-card-text class="pa-4">
-                        <div class="file-item">
-                          <v-icon color="teal" size="32" class="mb-2"> mdi-presentation </v-icon>
-                          <h4 class="file-title">Taqdimot</h4>
-                          <p class="file-desc">Prezentatsiya</p>
-                        </div>
-                      </v-card-text>
-                    </v-card>
-                  </v-col>
+                    <v-col v-if="topic.agenda_files?.presentation" cols="12" sm="6" md="4">
+                      <v-card
+                        class="file-card presentation-card"
+                        elevation="2"
+                        @click="navigateToPresentation(topic.agenda_files)"
+                      >
+                        <v-card-text class="pa-4">
+                          <div class="file-item">
+                            <v-icon color="teal" size="32" class="mb-2"> mdi-presentation </v-icon>
+                            <h4 class="file-title">Тақдимот</h4>
+                            <p class="file-desc">Презентация</p>
+                          </div>
+                        </v-card-text>
+                      </v-card>
+                    </v-col>
 
-                  <!-- Ilovalar -->
-                  <v-col
-                    v-for="(appFileUrl, appIndex) in topic.agenda_files?.app_files || []"
-                    :key="`app-file-${topic.id}-${appIndex}`"
-                    cols="12"
-                    sm="6"
-                    md="4"
-                  >
-                    <v-card
-                      class="file-card app-file-card"
-                      elevation="2"
-                      @click="navigateToAppFile(topic.agenda_files, appFileUrl)"
+                    <!-- Ilovalar -->
+                    <v-col
+                      v-for="(appFileUrl, appIndex) in topic.agenda_files?.app_files || []"
+                      :key="`app-file-${topic.id}-${appIndex}`"
+                      cols="12"
+                      sm="6"
+                      md="4"
                     >
-                      <v-card-text class="pa-4">
-                        <div class="file-item">
-                          <v-icon color="indigo" size="32" class="mb-2">
-                            mdi-file-plus-outline
-                          </v-icon>
-                          <h4 class="file-title">Ilova {{ appIndex + 1 }}</h4>
-                          <p class="file-desc">Qo'shimcha fayl</p>
-                        </div>
-                      </v-card-text>
-                    </v-card>
-                  </v-col>
-                </v-row>
-              </v-expansion-panel-text>
-            </v-expansion-panel>
+                      <v-card
+                        class="file-card app-file-card"
+                        elevation="2"
+                        @click="navigateToAppFile(topic.agenda_files, appFileUrl)"
+                      >
+                        <v-card-text class="pa-4">
+                          <div class="file-item">
+                            <v-icon color="indigo" size="32" class="mb-2">
+                              mdi-file-plus-outline
+                            </v-icon>
+                            <h4 class="file-title">Илова {{ appIndex + 1 }}</h4>
+                            <p class="file-desc">Қўшимча файл</p>
+                          </div>
+                        </v-card-text>
+                      </v-card>
+                    </v-col>
+                  </v-row>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </div>
           </v-expansion-panels>
         </v-col>
       </v-row>
@@ -223,7 +225,7 @@
       <v-row v-if="loading" justify="center" class="mt-8">
         <v-col cols="12" class="text-center">
           <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
-          <p class="mt-4 text-h6">Ma'lumotlar yuklanmoqda...</p>
+          <p class="mt-4 text-h6">Маълумотлар юкланмоқда...</p>
         </v-col>
       </v-row>
 
@@ -232,10 +234,21 @@
           <v-alert type="error" variant="tonal" class="mb-4">
             {{ error }}
           </v-alert>
-          <v-btn color="primary" @click="fetchBoardData" :loading="loading"> Qayta urinish </v-btn>
+          <v-btn color="primary" @click="fetchBoardData" :loading="loading"> Қайта уриниш </v-btn>
         </v-col>
       </v-row>
     </v-container>
+    <v-dialog v-model="modelValue" max-width="400" persistent>
+      <v-card>
+        <v-card-title class="text-h6">Chiqish</v-card-title>
+        <v-card-text>Ростдан ҳам ҳисобдан чиқмоқчимисиз?</v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" color="grey" @click="cancel">Бекор қилиш</v-btn>
+          <v-btn variant="tonal" color="red" @click="confirm">Чиқиш</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -253,6 +266,7 @@ const expandedPanels = ref([])
 const loading = ref(false)
 const error = ref('')
 const appStore = useAppStore()
+const modelValue = ref(false)
 
 const boardData = ref({
   id: null,
@@ -450,8 +464,11 @@ onMounted(async () => {
   await fetchBoardData()
   await FetchEventData()
 })
-
-const logout = async () => {
+const cancel = () => {
+  modelValue.value = false
+}
+const confirm = async () => {
+  modelValue.value = false
   localStorage.removeItem('access')
   localStorage.removeItem('user')
   await router.push('/login')
@@ -501,6 +518,7 @@ const exit = async () => {
 }
 
 .feature-card {
+  margin-bottom: 0px !important;
   background: white !important;
   border-radius: 16px !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

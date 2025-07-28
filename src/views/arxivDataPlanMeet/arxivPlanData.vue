@@ -1,9 +1,9 @@
 <template>
   <div class="info-section" :class="informatingSellect.length > 4 ? 'auto-height' : 'full-height'">
     <div class="logout">
-      <v-tooltip text="Chiqish">
+      <v-tooltip text="Чиқиш">
         <template #activator="{ props }">
-          <v-btn icon color="red" v-bind="props" @click="logout">
+          <v-btn icon color="red" v-bind="props" @click="modelValue = true">
             <v-icon>mdi-logout</v-icon>
           </v-btn>
         </template>
@@ -15,14 +15,14 @@
     <v-container>
       <v-row justify="center">
         <v-col cols="12" md="8" class="text-center">
-          <h2 class="section-title mb-4">Boshqaruv Kengashi Uchrashuv Arxivi</h2>
+          <h2 class="section-title mb-4">Бошқарув Кенгаши Архиви</h2>
         </v-col>
       </v-row>
       <v-row justify="center" class="mb-2" dense>
         <v-col cols="12" md="4">
           <v-text-field
             v-model="search"
-            label="Qidirish..."
+            label="Қидириш..."
             variant="outlined"
             density="comfortable"
             clearable
@@ -57,7 +57,7 @@
         <v-col v-if="!informatingSellect && !loading" cols="12" md="6">
           <v-card class="pa-8 text-center" variant="outlined" elevation="1">
             <v-icon size="48" color="grey">mdi-database-remove</v-icon>
-            <h2 class="mt-4 mb-2">Ma'lumot mavjud emas</h2>
+            <h2 class="mt-4 mb-2">Маълумот мавжуд эмас</h2>
           </v-card>
         </v-col>
       </v-row>
@@ -74,6 +74,17 @@
         </v-col>
       </v-row>
     </v-container>
+    <v-dialog v-model="modelValue" max-width="400" persistent>
+      <v-card>
+        <v-card-title class="text-h6">Chiqish</v-card-title>
+        <v-card-text>Ростдан ҳам ҳисобдан чиқмоқчимисиз?</v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" color="grey" @click="cancel">Бекор қилиш</v-btn>
+          <v-btn variant="tonal" color="red" @click="confirm">Чиқиш</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -90,6 +101,7 @@ const totalPages = ref(0)
 const informatingSellect = ref([])
 const loading = ref(false)
 const router = useRouter()
+const modelValue = ref(false)
 
 const getEventData = async () => {
   loading.value = true
@@ -145,12 +157,17 @@ const handleCardClick = (item) => {
     query: { pdfUrl: encodeURIComponent(item.file) },
   })
 }
-const logout = async () => {
+const cancel = () => {
+  modelValue.value = false
+}
+const confirm = async () => {
+  modelValue.value = false
   localStorage.removeItem('access')
   localStorage.removeItem('user')
   await router.push('/login')
   location.reload()
 }
+
 const goBack = () => router.go(-1)
 </script>
 

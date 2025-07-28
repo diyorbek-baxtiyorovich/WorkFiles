@@ -26,6 +26,12 @@ const routes = [
     meta: { requiresAuth: true, layout: 'default' },
   },
   {
+    path: '/archiveMeeting',
+    name: 'archive-meeting',
+    component: () => import('@/views/InformatingSellect/SellectAchiveBlock/blockAchiveView.vue'),
+    meta: { requiresAuth: true, layout: 'default' },
+  },
+  {
     path: '/planArxiv',
     name: 'plan-arxiv',
     component: () => import('@/views/arxivDataPlanMeet/arxivPlanData.vue'),

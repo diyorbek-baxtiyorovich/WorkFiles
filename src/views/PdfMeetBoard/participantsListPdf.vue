@@ -12,7 +12,7 @@
 
     <div v-if="loading" class="loading-container">
       <v-progress-circular indeterminate color="primary" size="64" />
-      <p class="mt-4">PDF yuklanmoqda...</p>
+      <p class="mt-4">PDF yuklanmoqda..</p>
     </div>
 
     <div v-else-if="error" class="error-container">
@@ -147,7 +147,7 @@ const initializePdfs = () => {
 
   try {
     const firstPdfUrl = route.query.firstPdfUrl || route.params.firstPdfUrl
-    const secondPdfUrl = route.query.secondPdfUrl || route.params.secondPdfUrl
+    const secondPdfUrl = route.query.secondPdfUrl || <route class="params secondPdfUrl"></route>
     const activeType = route.query.activeType || 'local'
     const firstType = route.query.firstType || 'local'
     const secondType = route.query.secondType || 'regional'
@@ -158,7 +158,6 @@ const initializePdfs = () => {
       const decodedFirstUrl = decodeURIComponent(firstPdfUrl || '')
       const decodedSecondUrl = decodeURIComponent(secondPdfUrl || '')
 
-      // Dinamik nomlar funksiyasi
       const getTabName = (type) => {
         switch (type) {
           case 'local':
